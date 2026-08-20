@@ -1,14 +1,22 @@
-# QA HOME · Mi DOCTA · Municipalidad de Córdoba (v2.2)
+# QA Mi DOCTA · Municipalidad de Córdoba
 
-Proyecto de ejecución de QA para el módulo HOME (web) de la plataforma Mi DOCTA.
+Proyecto de ejecución de QA de la plataforma Mi DOCTA. Un único tablero
+interactivo, con un selector de módulo arriba a la izquierda — hoy cubre
+**HOME (Web)** (70 casos) y **Autenticación e Ingreso (Web)** (33 casos).
+Cada módulo nuevo se agrega como una entrada más del selector, reusando
+el mismo componente — no se crea un repo ni un archivo nuevo por módulo.
 
 ## 🔗 Ver el tablero de ejecución (HTML interactivo)
 
 > ⚠️ Requiere que **GitHub Pages** esté activado en este repositorio (Settings → Pages → Source: branch `main`, carpeta `/root`).
 
-**[Abrir QA HOME Mi DOCTA (vista interactiva)](https://mikaelmarovich-cpu.github.io/Mi-Docta-muni/qa-home-mi-docta-municipalidad-de-c-rdoba-versi-n-del-docume/project/QA%20HOME%20Mi%20DOCTA.dc.html)**
+**[Abrir QA Mi DOCTA (vista interactiva)](https://mikaelmarovich-cpu.github.io/Mi-Docta-muni/qa-home-mi-docta-municipalidad-de-c-rdoba-versi-n-del-docume/project/QA%20HOME%20Mi%20DOCTA.dc.html)**
 
-Desde ahí se puede filtrar por estado/prioridad/sección, ver el detalle de cada uno de los 70 casos de prueba, y descargar un informe en PDF con el botón "DESCARGAR PDF".
+Desde ahí se puede elegir el módulo (selector superior), filtrar por
+estado/prioridad/sección, ver el detalle de cada caso de prueba, y
+descargar un informe en PDF con el botón "DESCARGAR PDF". El progreso de
+cada módulo se guarda por separado (no se mezclan los resultados de HOME
+con los de Autenticación).
 
 ## Estructura
 

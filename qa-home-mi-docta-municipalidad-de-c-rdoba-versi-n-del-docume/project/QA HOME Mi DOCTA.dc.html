@@ -49,6 +49,12 @@
       </div>
 
       <div style="padding:10px 20px; display:flex; gap:8px; flex-wrap:wrap; align-items:center; border-bottom:1px solid #E2E6EB; background:#fff">
+        <select value="{{ fModulo }}" onChange="{{ onModulo }}" style="font-size:13px; font-weight:600; border-color:#1A56A8">
+          <sc-for list="{{ moduleOptions }}" as="m" hint-placeholder-count="2">
+            <option value="{{ m.key }}">{{ m.label }}</option>
+          </sc-for>
+        </select>
+        <div style="width:1px; height:22px; background:#E2E6EB"></div>
         <select value="{{ fStat }}" onChange="{{ onFStat }}" style="font-size:13px">
           <option value="all">Todos los estados</option>
           <option value="pendiente">Pendiente</option>
@@ -233,7 +239,7 @@
 </x-dc>
 <script type="text/x-dc" data-dc-script data-props="{&quot;headerTitle&quot;:{&quot;editor&quot;:&quot;text&quot;,&quot;default&quot;:&quot;QA — HOME (Web) · Mi DOCTA&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;headerSubtitle&quot;:{&quot;editor&quot;:&quot;text&quot;,&quot;default&quot;:&quot;Municipalidad de Córdoba · v2.2 · Vista Vecino&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;groupBy&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;Sección&quot;,&quot;Prioridad&quot;,&quot;Estado&quot;],&quot;default&quot;:&quot;Sección&quot;,&quot;tsType&quot;:&quot;string&quot;}}">
 class Component extends DCLogic {
-  static RAW = [
+  static RAW_HOME = [
     { id:"TC-HOME-001", name:"Logo 'Mi DOCTA' navega a Inicio", tipo:"Happy path", prioridad:"P2", seccion:"1 · Header y branding",
       objetivo:"Verificar que el logo 'Mi DOCTA' navega al HOME desde cualquier módulo.",
       pre:{ u:"Vecino logueado (220288219487)", e:"Usuario en módulo secundario (no en HOME)." },
@@ -717,6 +723,202 @@ class Component extends DCLogic {
       resultadoEsperado:"No queda en estado de pago intermedio ambiguo. El sistema maneja la recarga correctamente." },
   ];
 
+  static RAW_AUTH = [
+    { id:"TC-AUTH-001", name:"Login con CUIL y contraseña válidos", tipo:"Happy path", prioridad:"P1", seccion:"1 · Login — campos y elementos",
+      objetivo:"Verificar que el login funciona con CUIL y contraseña correctos.",
+      pre:{ u:"CUIL válido registrado (ej. 20-31589176-5) con contraseña conocida.", e:"Usuario en la pantalla de login, sin sesión activa." },
+      pasos:["Ingresar el CUIL.","Ingresar la contraseña.","Click en 'Ingresar'."],
+      resultadoEsperado:"Accede a HOME." },
+    { id:"TC-AUTH-002", name:"Campo CUIL vacío (Negativo)", tipo:"Negativo", prioridad:"P1", seccion:"1 · Login — campos y elementos",
+      objetivo:"Verificar el mensaje de validación cuando el campo CUIL está vacío.",
+      pre:{ u:"Ninguno.", e:"Usuario en la pantalla de login." },
+      pasos:["Dejar el campo CUIL vacío.","Completar la contraseña.","Click en 'Ingresar'."],
+      resultadoEsperado:"Mensaje en rojo bajo el campo: 'Por favor, completá tu CUIL para continuar'. No se envía el request.",
+      alertas:["✅ Copy confirmado con captura de Figma."] },
+    { id:"TC-AUTH-003", name:"Campo Contraseña vacío (Negativo)", tipo:"Negativo", prioridad:"P1", seccion:"1 · Login — campos y elementos",
+      objetivo:"Verificar el mensaje de validación cuando el campo Contraseña está vacío.",
+      pre:{ u:"Ninguno.", e:"Usuario en la pantalla de login." },
+      pasos:["Completar el CUIL.","Dejar la contraseña vacía.","Click en 'Ingresar'."],
+      resultadoEsperado:"Mensaje en rojo bajo el campo: 'Por favor, completá tu contraseña'.",
+      alertas:["✅ Copy confirmado con captura de Figma."] },
+    { id:"TC-AUTH-004", name:"Ambos campos vacíos (Edge)", tipo:"Edge", prioridad:"P2", seccion:"1 · Login — campos y elementos",
+      objetivo:"Verificar que ambos mensajes de validación aparecen simultáneamente.",
+      pre:{ u:"Ninguno.", e:"Usuario en la pantalla de login." },
+      pasos:["Click en 'Ingresar' sin completar ningún campo."],
+      resultadoEsperado:"Aparecen los dos mensajes de validación (CUIL y Contraseña) a la vez." },
+    { id:"TC-AUTH-005", name:"CUIL con formato inválido (Edge)", tipo:"Edge", prioridad:"P2", seccion:"1 · Login — campos y elementos",
+      objetivo:"Verificar el comportamiento con un CUIL de formato inválido.",
+      pre:{ u:"CUIL sin guiones ('123456') y CUIL con letras ('AB-12345678-9').", e:"Usuario en la pantalla de login." },
+      pasos:["Ingresar un CUIL con formato inválido.","Completar contraseña.","Click en 'Ingresar'."],
+      resultadoEsperado:"[A CONFIRMAR] — no hay captura de este mensaje específico.",
+      alertas:["⚠️ Confirmar si valida formato antes de enviar o si lo deja pasar al backend."] },
+    { id:"TC-AUTH-006", name:"CUIL inexistente o contraseña incorrecta (Negativo)", tipo:"Negativo", prioridad:"P1", seccion:"1 · Login — campos y elementos",
+      objetivo:"Verificar que el mensaje de error es genérico, sin revelar cuál dato es incorrecto (REQ-AUTH-002).",
+      pre:{ u:"CUIL válido en formato pero no registrado; y CUIL registrado con contraseña incorrecta.", e:"Usuario en la pantalla de login." },
+      pasos:["Ingresar un CUIL no registrado y cualquier contraseña.","Repetir con un CUIL registrado y contraseña incorrecta.","Comparar los mensajes de error de ambos casos."],
+      resultadoEsperado:"Mensaje genérico idéntico en ambos casos, sin indicar cuál dato es el incorrecto.",
+      alertas:["⚠️ Texto exacto no confirmado con captura todavía."] },
+    { id:"TC-AUTH-007", name:"Mostrar/ocultar contraseña (ícono de ojo)", tipo:"Happy path", prioridad:"P2", seccion:"1 · Login — campos y elementos",
+      objetivo:"Verificar que el ícono de ojo alterna la visibilidad de la contraseña.",
+      pre:{ u:"Ninguno.", e:"Usuario en la pantalla de login." },
+      pasos:["Escribir una contraseña.","Click en el ícono de ojo."],
+      resultadoEsperado:"El texto alterna entre oculto (puntos/asteriscos) y visible en texto plano." },
+    { id:"TC-AUTH-008", name:"Toggle 'Recordarme' (nuevo, sin REQ todavía)", tipo:"Happy path", prioridad:"P2", seccion:"1 · Login — campos y elementos",
+      objetivo:"Verificar el comportamiento del toggle 'Recordarme' entre sesiones.",
+      pre:{ u:"CUIL y contraseña válidos.", e:"Usuario en la pantalla de login." },
+      pasos:["Activar 'Recordarme'.","Loguearse.","Cerrar el navegador.","Volver a abrir MiDocta."],
+      resultadoEsperado:"[A DEFINIR] — mantener sesión o pre-completar CUIL. Comportamiento exacto no documentado.",
+      alertas:["⚠️ Este control no tiene REQ en el PRD v1.0 — agregar en una v1.1.","⚠️ Confirmar con PO antes de fijar el resultado esperado."] },
+    { id:"TC-AUTH-009", name:"Link '¿Olvidaste tu contraseña?'", tipo:"Happy path", prioridad:"P1", seccion:"1 · Login — campos y elementos",
+      objetivo:"Verificar que el link navega al primer paso de recuperación de clave.",
+      pre:{ u:"Ninguno.", e:"Usuario en la pantalla de login." },
+      pasos:["Click en '¿Olvidaste tu contraseña?'."],
+      resultadoEsperado:"Navega a 'Ingresá tu CUIL para comenzar' (sección 3)." },
+    { id:"TC-AUTH-010", name:"Tarjeta de contacto de login", tipo:"Happy path", prioridad:"P3", seccion:"1 · Login — campos y elementos",
+      objetivo:"Verificar que la tarjeta de contacto abre un canal de soporte.",
+      pre:{ u:"Ninguno.", e:"Usuario en la pantalla de login." },
+      pasos:["Click en la tarjeta 'Si tenés problema para generar tu usuario o consultas, comunicate con nosotros'."],
+      resultadoEsperado:"Abre un canal de contacto/soporte.",
+      alertas:["⚠️ Confirmar destino exacto."] },
+    { id:"TC-AUTH-011", name:"Badges 'Descargá la app'", tipo:"Happy path", prioridad:"P3", seccion:"1 · Login — campos y elementos",
+      objetivo:"Verificar que los badges de App Store / Google Play abren la tienda correcta.",
+      pre:{ u:"Ninguno.", e:"Usuario en la pantalla de login." },
+      pasos:["Click en el badge de App Store.","Click en el badge de Google Play."],
+      resultadoEsperado:"Cada badge abre la ficha de MiDocta en su tienda correspondiente." },
+    { id:"TC-AUTH-012", name:"Links legales del pie de login", tipo:"Happy path", prioridad:"P3", seccion:"1 · Login — campos y elementos",
+      objetivo:"Verificar los 3 links del pie: Términos y condiciones, validación CiDi Nivel 2, Instructivo Nivel 2.",
+      pre:{ u:"Ninguno.", e:"Usuario en la pantalla de login." },
+      pasos:["Click en 'Términos y condiciones'.","Click en 'Algunos trámites requieren validación con CiDi Nivel 2'.","Click en 'Instructivo Nivel 2'."],
+      resultadoEsperado:"Cada link navega a su documento/página correspondiente.",
+      alertas:["⚠️ Integración 'CiDi Nivel 2' no documentada en ENGRAM.md — investigar alcance antes de dar por completa esta sección."] },
+    { id:"TC-AUTH-013", name:"Footer municipal (logos, redes, dirección, teléfono)", tipo:"Happy path", prioridad:"P3", seccion:"1 · Login — campos y elementos",
+      objetivo:"Verificar el footer municipal, igual al confirmado en HOME.",
+      pre:{ u:"Ninguno.", e:"Usuario en la pantalla de login." },
+      pasos:["Hacer scroll hasta el final de la pantalla de login."],
+      resultadoEsperado:"Logo Córdoba + Municipalidad, 6 redes sociales, dirección, teléfono '0800-888-0404' — mismo footer que HOME." },
+
+    { id:"TC-AUTH-014", name:"Bloqueo tras 5 intentos fallidos consecutivos [HIPÓTESIS]", tipo:"Happy path", prioridad:"P1", seccion:"2 · Bloqueo por intentos fallidos",
+      objetivo:"Verificar el bloqueo temporal de la cuenta tras intentos fallidos consecutivos.",
+      pre:{ u:"CUIL válido, contraseña incorrecta.", e:"Usuario en la pantalla de login." },
+      pasos:["Intentar login con contraseña incorrecta 5 veces consecutivas."],
+      resultadoEsperado:"[HIPÓTESIS — PD-01 del PRD] Al 5° intento, bloquea el login por 15 minutos con mensaje del tiempo restante.",
+      alertas:["⚠️ Sin captura de Figma para este estado — valor adoptado como hipótesis de práctica externa, no confirmado por PO/diseño."] },
+    { id:"TC-AUTH-015", name:"Login con cuenta bloqueada, dentro de la ventana [HIPÓTESIS]", tipo:"Negativo", prioridad:"P2", seccion:"2 · Bloqueo por intentos fallidos",
+      objetivo:"Verificar que el bloqueo no se reinicia con nuevos intentos.",
+      pre:{ u:"Cuenta ya bloqueada (TC-AUTH-014).", e:"Dentro de la ventana de bloqueo." },
+      pasos:["Intentar login nuevamente con credenciales correctas o incorrectas."],
+      resultadoEsperado:"[HIPÓTESIS] Rechaza el intento con el mismo mensaje de tiempo restante, no reinicia el contador." },
+    { id:"TC-AUTH-016", name:"Intento exitoso resetea el contador de fallos (Edge) [HIPÓTESIS]", tipo:"Edge", prioridad:"P3", seccion:"2 · Bloqueo por intentos fallidos",
+      objetivo:"Verificar que un login exitoso resetea el contador de intentos fallidos.",
+      pre:{ u:"3 intentos fallidos previos, luego 1 exitoso.", e:"Usuario logueado tras el intento exitoso." },
+      pasos:["Fallar el login 3 veces.","Loguearse correctamente al 4° intento.","Cerrar sesión.","Fallar el login de nuevo y contar desde cuántos intentos bloquea."],
+      resultadoEsperado:"[HIPÓTESIS] El contador vuelve a 0 tras un login exitoso — no persiste entre sesiones." },
+
+    { id:"TC-AUTH-017", name:"Pantalla 'Ingresá tu CUIL para comenzar'", tipo:"Happy path", prioridad:"P1", seccion:"3 · Recuperación — Paso 1 (CUIL)",
+      objetivo:"Verificar el primer paso del flujo de recuperación de clave.",
+      pre:{ u:"CUIL válido y registrado, formato XX-XXXXXXXX-X.", e:"Desde login, click en '¿Olvidaste tu contraseña?'." },
+      pasos:["Ingresar el CUIL.","Click en 'Siguiente'."],
+      resultadoEsperado:"Avanza al paso de código de verificación (sección 4)." },
+    { id:"TC-AUTH-018", name:"Botón 'Volver'", tipo:"Happy path", prioridad:"P2", seccion:"3 · Recuperación — Paso 1 (CUIL)",
+      objetivo:"Verificar que 'Volver' regresa al login sin perder datos.",
+      pre:{ u:"Ninguno.", e:"En la pantalla 'Ingresá tu CUIL para comenzar'." },
+      pasos:["Click en 'Volver'."],
+      resultadoEsperado:"Regresa a la pantalla de login sin perder ningún dato ya ingresado ahí." },
+    { id:"TC-AUTH-019", name:"CUIL vacío en este paso (Negativo)", tipo:"Negativo", prioridad:"P1", seccion:"3 · Recuperación — Paso 1 (CUIL)",
+      objetivo:"Verificar el mensaje de validación cuando el CUIL está vacío en este paso.",
+      pre:{ u:"Ninguno.", e:"En la pantalla 'Ingresá tu CUIL para comenzar'." },
+      pasos:["Click en 'Siguiente' sin completar el CUIL."],
+      resultadoEsperado:"Mensaje confirmado: 'Por favor, completá tu CUIL para continuar'.",
+      alertas:["✅ Copy confirmado con captura de Figma."] },
+    { id:"TC-AUTH-020", name:"CUIL no registrado en el sistema (Negativo)", tipo:"Negativo", prioridad:"P1", seccion:"3 · Recuperación — Paso 1 (CUIL)",
+      objetivo:"Verificar el comportamiento con un CUIL de formato válido pero no asociado a ninguna cuenta.",
+      pre:{ u:"CUIL con formato válido, no registrado.", e:"En la pantalla 'Ingresá tu CUIL para comenzar'." },
+      pasos:["Ingresar el CUIL no registrado.","Click en 'Siguiente'."],
+      resultadoEsperado:"[A CONFIRMAR] Por buena práctica de seguridad, debería avanzar igual que un CUIL válido (evitar enumeración de usuarios) — no confirmado con captura ni con PO.",
+      alertas:["⚠️ No asumir sin verificar con PO."] },
+
+    { id:"TC-AUTH-021", name:"Pantalla de código de verificación", tipo:"Happy path", prioridad:"P1", seccion:"4 · Recuperación — Paso 2 (código)",
+      objetivo:"Verificar el texto y los elementos de la pantalla de código de verificación.",
+      pre:{ u:"Paso 1 (CUIL) completado.", e:"En la pantalla de código de verificación." },
+      pasos:["Observar el texto y los elementos de la pantalla."],
+      resultadoEsperado:"Texto confirmado: 'Te enviamos un correo con un código de verificación para confirmar tu mail y restablecer tu contraseña.' + 6 casillas + link 'Reenviar código'.",
+      alertas:["✅ Copy y layout confirmados con captura de Figma."] },
+    { id:"TC-AUTH-022", name:"Ingresar el código correcto", tipo:"Happy path", prioridad:"P1", seccion:"4 · Recuperación — Paso 2 (código)",
+      objetivo:"Verificar que el código correcto avanza al paso de definir clave nueva.",
+      pre:{ u:"Código de 6 dígitos recibido por correo.", e:"En la pantalla de código de verificación." },
+      pasos:["Ingresar los 6 dígitos recibidos por correo."],
+      resultadoEsperado:"Avanza al paso de definir clave nueva (sección 5)." },
+    { id:"TC-AUTH-023", name:"Código incorrecto (Negativo)", tipo:"Negativo", prioridad:"P1", seccion:"4 · Recuperación — Paso 2 (código)",
+      objetivo:"Verificar el comportamiento con un código incorrecto.",
+      pre:{ u:"6 dígitos que no coinciden con el código enviado.", e:"En la pantalla de código de verificación." },
+      pasos:["Ingresar un código incorrecto de 6 dígitos."],
+      resultadoEsperado:"[A CONFIRMAR] Mensaje de error esperado, no avanza de pantalla.",
+      alertas:["⚠️ Verificar si las casillas se pueden corregir o se limpian."] },
+    { id:"TC-AUTH-024", name:"Código expirado (Edge) [HIPÓTESIS]", tipo:"Edge", prioridad:"P1", seccion:"4 · Recuperación — Paso 2 (código)",
+      objetivo:"Verificar el comportamiento cuando el código ya expiró.",
+      pre:{ u:"Código válido, esperar más de 15 minutos antes de ingresarlo.", e:"En la pantalla de código de verificación." },
+      pasos:["Esperar más de 15 minutos.","Ingresar el código."],
+      resultadoEsperado:"[HIPÓTESIS — PD-04 del PRD] Mensaje de 'código expirado', debe solicitar uno nuevo.",
+      alertas:["⚠️ Confirmar el tiempo real de expiración con PO."] },
+    { id:"TC-AUTH-025", name:"Auto-avance entre casillas del código (Edge)", tipo:"Edge", prioridad:"P3", seccion:"4 · Recuperación — Paso 2 (código)",
+      objetivo:"Verificar que el foco avanza automáticamente entre casillas del código.",
+      pre:{ u:"Ninguno.", e:"En la pantalla de código de verificación." },
+      pasos:["Escribir un dígito en la primera casilla."],
+      resultadoEsperado:"El foco avanza automáticamente a la siguiente casilla.",
+      alertas:["⚠️ Confirmar que este comportamiento esté implementado, no asumir."] },
+    { id:"TC-AUTH-026", name:"'Reenviar código' dentro del cooldown [HIPÓTESIS]", tipo:"Negativo", prioridad:"P1", seccion:"4 · Recuperación — Paso 2 (código)",
+      objetivo:"Verificar el mensaje de cooldown al reenviar el código antes de tiempo (resuelve PP-01 / HU-BW-29).",
+      pre:{ u:"Código ya solicitado.", e:"En la pantalla de código de verificación." },
+      pasos:["Click en 'Reenviar código' inmediatamente después de haberlo solicitado."],
+      resultadoEsperado:"[HIPÓTESIS] Mensaje 'Podés reenviar el código en {X} segundos' con countdown, link deshabilitado durante 60s.",
+      alertas:["⚠️ Sin captura visual de este estado específico todavía."] },
+    { id:"TC-AUTH-027", name:"Reenviar código después del cooldown", tipo:"Happy path", prioridad:"P1", seccion:"4 · Recuperación — Paso 2 (código)",
+      objetivo:"Verificar que el reenvío funciona correctamente tras expirar el cooldown.",
+      pre:{ u:"Cooldown ya expirado (TC-AUTH-026).", e:"En la pantalla de código de verificación." },
+      pasos:["Click en 'Reenviar código' una vez expirado el cooldown."],
+      resultadoEsperado:"El código se reenvía correctamente, mismo comportamiento que TC-AUTH-021." },
+    { id:"TC-AUTH-028", name:"Ningún error técnico visible durante el cooldown (Negativo)", tipo:"Negativo", prioridad:"P2", seccion:"4 · Recuperación — Paso 2 (código)",
+      objetivo:"Verificar que no se expone ningún error técnico al usuario (CA-03 de HU-BW-29).",
+      pre:{ u:"Ninguno.", e:"Forzar el cooldown reenviando rápido." },
+      pasos:["Forzar el cooldown.","Observar la pantalla en busca de código HTTP o stack trace."],
+      resultadoEsperado:"Ningún código HTTP ni stack trace visible para el usuario." },
+
+    { id:"TC-AUTH-029", name:"Placeholder: relevar pantalla 'definir clave nueva'", tipo:"N/A", prioridad:"P1", seccion:"5 · Recuperación — Paso 3 (clave nueva)",
+      objetivo:"Relevar la pantalla real antes de diseñar los TC definitivos de este paso.",
+      pre:{ u:"—", e:"—" },
+      pasos:["Pedir la captura de Figma de la pantalla 'definir clave nueva' y sus estados de error (fila 'Resetear contraseña', 6 frames, solo 2 capturados hasta ahora)."],
+      resultadoEsperado:"[PENDIENTE DE CAPTURA] Confirmar campos exactos, reglas de validación reales, y si hay campo de 'repetir clave'." },
+
+    { id:"TC-AUTH-030", name:"Placeholder: decidir alcance de 'Crear cuenta en MiDocta'", tipo:"N/A", prioridad:"P2", seccion:"6 · Registro de cuenta nueva [FUERA DE ALCANCE ACORDADO]",
+      objetivo:"Definir si el flujo de registro entra en esta ronda o en una separada.",
+      pre:{ u:"—", e:"—" },
+      pasos:["Definir con el equipo si 'Crear cuenta en MiDocta' se agrega como alcance nuevo (v1.1 del Brief/PRD) o queda para una ronda separada."],
+      resultadoEsperado:"[FUERA DE ALCANCE ACORDADO] No diseñar TC de este flujo hasta esa decisión." },
+
+    { id:"TC-AUTH-031", name:"Recargar durante el flujo de recuperación (Edge)", tipo:"Edge", prioridad:"P2", seccion:"7 · Navegación general",
+      objetivo:"Verificar el comportamiento al recargar en medio del flujo de recuperación.",
+      pre:{ u:"Ninguno.", e:"En el paso de código de verificación (sección 4)." },
+      pasos:["Recargar la página (F5)."],
+      resultadoEsperado:"[A CONFIRMAR] ¿Mantiene el estado del flujo o vuelve al login desde cero? Cualquiera es válido si es consistente y no pierde el código ya enviado sin avisar." },
+    { id:"TC-AUTH-032", name:"Volver atrás del navegador durante la recuperación (Edge)", tipo:"Edge", prioridad:"P2", seccion:"7 · Navegación general",
+      objetivo:"Verificar que 'atrás' del navegador equivale al botón 'Volver'.",
+      pre:{ u:"Ninguno.", e:"En el paso de código." },
+      pasos:["Presionar 'atrás' del navegador."],
+      resultadoEsperado:"Vuelve al paso anterior (ingreso de CUIL) sin romper el flujo, equivalente a TC-AUTH-018." },
+    { id:"TC-AUTH-033", name:"Sesión ya iniciada, acceder a la URL de login (Edge)", tipo:"Edge", prioridad:"P3", seccion:"7 · Navegación general",
+      objetivo:"Verificar el comportamiento al acceder a login estando ya logueado.",
+      pre:{ u:"Vecino ya logueado.", e:"Navegar manualmente a la URL de login." },
+      pasos:["Con sesión activa, navegar directamente a la URL de login."],
+      resultadoEsperado:"[A CONFIRMAR] Redirige a HOME automáticamente, o muestra el login igual permitiendo cambiar de cuenta." },
+  ];
+
+  static MODULES = {
+    "home": { label:"HOME (Web)", raw: this.RAW_HOME, key:"qa-muni-home-v2.2-r13",
+      headerTitle:"QA — HOME (Web) · Mi DOCTA", headerSubtitle:"Municipalidad de Córdoba · v2.2 · Vista Vecino" },
+    "autenticacion-ingreso": { label:"Autenticación e Ingreso (Web)", raw: this.RAW_AUTH, key:"qa-muni-auth-v1.0-r1",
+      headerTitle:"QA — Autenticación e Ingreso (Web) · Mi DOCTA", headerSubtitle:"Municipalidad de Córdoba · v1.0 · Vista Vecino" },
+  };
+
   static STATUS = {
     pendiente:{ label:"Pendiente", col:"#8A94A2", bg:"#EEF1F4", fill:"#C3CBD4" },
     ok:{ label:"OK", col:"#157F4A", bg:"#E8F5EE", fill:"#22A05F" },
@@ -731,27 +933,41 @@ class Component extends DCLogic {
     "N/A":{ col:"#8A94A2", bg:"#EEF1F4" },
   };
   static PRIO = { P1:"#A5311F", P2:"#8A5A00", P3:"#8A94A2" };
-  static KEY = "qa-muni-home-v2.2-r13";
+
+  rawFor(modKey) { return (Component.MODULES[modKey] || Component.MODULES.home).raw; }
+  keyFor(modKey) { return (Component.MODULES[modKey] || Component.MODULES.home).key; }
+  tcsFor(modKey) {
+    return this.rawFor(modKey).map(t => ({ ...t, alertas: t.alertas || [], ambiente: t.ambiente || "", status: t.status || "pendiente", tester: t.tester || "", fecha: t.fecha || "", observaciones: t.observaciones || "", evidencia: t.evidencia || "" }));
+  }
+  loadSaved(modKey, tcs) {
+    try {
+      const raw = localStorage.getItem(this.keyFor(modKey));
+      if (!raw) return tcs;
+      const saved = JSON.parse(raw);
+      return tcs.map(t => {
+        const sv = saved[t.id];
+        if (!sv) return t;
+        const clean = {};
+        Object.keys(sv).forEach(k => { if (sv[k] !== "" && sv[k] != null) clean[k] = sv[k]; });
+        return { ...t, ...clean };
+      });
+    } catch (e) { return tcs; }
+  }
 
   state = {
-    tcs: Component.RAW.map(t => ({ ...t, alertas: t.alertas || [], ambiente: t.ambiente || "", status: t.status || "pendiente", tester: t.tester || "", fecha: t.fecha || "", observaciones: t.observaciones || "", evidencia: t.evidencia || "" })),
+    modulo: "home",
+    tcs: this.tcsFor("home"),
     view: "grid", idx: 0, fSec: "all", fStat: "all", fPrio: "all", copied: false,
   };
 
+  switchModulo = (modKey) => {
+    if (modKey === this.state.modulo) return;
+    const tcs = this.loadSaved(modKey, this.tcsFor(modKey));
+    this.setState({ modulo: modKey, tcs, view: "grid", idx: 0, fSec: "all", fStat: "all", fPrio: "all" });
+  };
+
   componentDidMount() {
-    try {
-      const raw = localStorage.getItem(Component.KEY);
-      if (raw) {
-        const saved = JSON.parse(raw);
-        this.setState(s => ({ tcs: s.tcs.map(t => {
-          const sv = saved[t.id];
-          if (!sv) return t;
-          const clean = {};
-          Object.keys(sv).forEach(k => { if (sv[k] !== "" && sv[k] != null) clean[k] = sv[k]; });
-          return { ...t, ...clean };
-        }) }));
-      }
-    } catch (e) {}
+    this.setState(s => ({ tcs: this.loadSaved(s.modulo, s.tcs) }));
     this._key = (e) => {
       if (this.state.view !== "slide") return;
       const tag = (e.target && e.target.tagName) || "";
@@ -768,7 +984,7 @@ class Component extends DCLogic {
     try {
       const obj = {};
       tcs.forEach(t => { obj[t.id] = { status:t.status, tester:t.tester, fecha:t.fecha, observaciones:t.observaciones, evidencia:t.evidencia }; });
-      localStorage.setItem(Component.KEY, JSON.stringify(obj));
+      localStorage.setItem(this.keyFor(this.state.modulo), JSON.stringify(obj));
     } catch (e) {}
   }
 
@@ -819,6 +1035,7 @@ class Component extends DCLogic {
       .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
     const ST = Component.STATUS;
     const S = this.state;
+    const modLabel = (Component.MODULES[S.modulo] || Component.MODULES.home).label;
     const counts = { total:S.tcs.length, ok:0, nok:0, blocked:0, pendiente:0 };
     S.tcs.forEach(t => { counts[t.status]++; });
 
@@ -851,7 +1068,7 @@ class Component extends DCLogic {
     `).join("");
 
     const html = `<!DOCTYPE html><html><head><meta charset="utf-8">
-      <title>Informe QA — HOME (Web) · Mi DOCTA</title>
+      <title>Informe QA — ${esc(modLabel)} · Mi DOCTA</title>
       <style>
         body { font-family:Helvetica Neue, Helvetica, Arial, sans-serif; color:#1B2430; padding:32px; }
         h1 { font-size:20px; margin:0 0 4px; }
@@ -875,8 +1092,8 @@ class Component extends DCLogic {
         @media print { .tc { page-break-inside:avoid; } }
       </style>
       </head><body>
-      <h1>Informe QA — HOME (Web) · Mi DOCTA</h1>
-      <div class="meta">Municipalidad de Córdoba · v2.2 · Generado: ${esc(new Date().toLocaleString("es-AR"))}</div>
+      <h1>Informe QA — ${esc(modLabel)} · Mi DOCTA</h1>
+      <div class="meta">Municipalidad de Córdoba · Generado: ${esc(new Date().toLocaleString("es-AR"))}</div>
       <div class="summary">Total: ${counts.total} · OK: ${counts.ok} · NO OK: ${counts.nok} · Blocked: ${counts.blocked} · Pendiente: ${counts.pendiente}</div>
       ${sectionsHtml}
       </body></html>`;
@@ -929,9 +1146,13 @@ class Component extends DCLogic {
     const fi = f.findIndex(x => x.id === t.id);
     const navBtn = (on) => ({ padding:"7px 11px", borderRadius:6, border:"1px solid #D7DDE5", background:"#fff", color:"#1B2430", cursor: on ? "pointer" : "default", opacity: on ? 1 : 0.35 });
 
+    const modCfg = Component.MODULES[S.modulo] || Component.MODULES.home;
     return {
-      headerTitle: this.props.headerTitle ?? "QA — HOME (Web) · Mi DOCTA",
-      headerSubtitle: (this.props.headerSubtitle ?? "Municipalidad de Córdoba · v2.2 · Vista Vecino") + " · " + f.length + " de " + counts.total + " TC",
+      headerTitle: modCfg.headerTitle,
+      headerSubtitle: modCfg.headerSubtitle + " · " + f.length + " de " + counts.total + " TC",
+      fModulo: S.modulo,
+      onModulo: e => this.switchModulo(e.target.value),
+      moduleOptions: Object.keys(Component.MODULES).map(k => ({ key:k, label: Component.MODULES[k].label })),
       isGrid: S.view === "grid", isSlide: S.view === "slide",
       statCells: [
         { l:"Total", v:counts.total, numStyle:{ fontSize:22, fontWeight:500, lineHeight:1, color:"rgba(255,255,255,0.9)" } },
@@ -942,7 +1163,7 @@ class Component extends DCLogic {
       ],
       progressStyle: { height:"100%", width: pct + "%", background: counts.nok > 0 ? "#f87171" : "#4ade80", borderRadius:99, transition:"width .4s" },
       pctLabel: pct + "%", okPctLabel: okPct + "% OK",
-      sections: [...new Set(Component.RAW.map(x => x.seccion))],
+      sections: [...new Set(S.tcs.map(x => x.seccion))],
       fSec: S.fSec, fStat: S.fStat, fPrio: S.fPrio,
       onFSec: e => this.setState({ fSec:e.target.value }),
       onFStat: e => this.setState({ fStat:e.target.value }),
