@@ -1,0 +1,998 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.19.0/dist/tabler-icons.min.css" />
+<style>
+  body { margin:0; background:#F4F6F8; -webkit-font-smoothing:antialiased; }
+  * { box-sizing:border-box; }
+  a { color:#1A56A8; text-decoration:none; }
+  a:hover { color:#123f7d; text-decoration:underline; }
+  input, textarea, select { font-family:inherit; color:#1B2430; border:1px solid #D7DDE5; border-radius:6px; padding:7px 9px; background:#fff; outline:none; }
+  input:focus, textarea:focus, select:focus { border-color:#1A56A8; }
+  button { font-family:inherit; }
+</style>
+</helmet>
+<div style="font-family:Helvetica Neue, Helvetica, Arial, sans-serif; color:#1B2430; min-height:100vh">
+
+  <sc-if value="{{ isGrid }}" hint-placeholder-val="{{ true }}">
+    <div>
+      <div style="background:#1A3356; padding:22px 26px 18px">
+        <div style="display:flex; align-items:flex-start; justify-content:space-between; flex-wrap:wrap; gap:14px">
+          <div>
+            <h1 style="color:#fff; font-size:19px; font-weight:500; margin:0 0 4px; letter-spacing:-0.01em">{{ headerTitle }}</h1>
+            <p style="color:rgba(255,255,255,0.55); font-size:13px; margin:0">{{ headerSubtitle }}</p>
+          </div>
+          <div style="display:flex; gap:16px">
+            <sc-for list="{{ statCells }}" as="s" hint-placeholder-count="5">
+              <div style="text-align:center; min-width:46px">
+                <div style="{{ s.numStyle }}">{{ s.v }}</div>
+                <div style="font-size:10px; color:rgba(255,255,255,0.45); margin-top:4px; text-transform:uppercase; letter-spacing:0.05em">{{ s.l }}</div>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+        <div style="margin-top:16px; display:flex; align-items:center; gap:12px">
+          <div style="flex:1; height:4px; border-radius:99px; background:rgba(255,255,255,0.12); overflow:hidden">
+            <div style="{{ progressStyle }}"></div>
+          </div>
+          <span style="font-size:12px; color:rgba(255,255,255,0.5); min-width:34px">{{ pctLabel }}</span>
+          <span style="font-size:12px; color:#4ade80">{{ okPctLabel }}</span>
+        </div>
+      </div>
+
+      <div style="padding:10px 20px; display:flex; gap:8px; flex-wrap:wrap; align-items:center; border-bottom:1px solid #E2E6EB; background:#fff">
+        <select value="{{ fStat }}" onChange="{{ onFStat }}" style="font-size:13px">
+          <option value="all">Todos los estados</option>
+          <option value="pendiente">Pendiente</option>
+          <option value="ok">OK</option>
+          <option value="nok">NO OK</option>
+          <option value="blocked">Blocked</option>
+          <option value="descartado">Descartado</option>
+        </select>
+        <select value="{{ fPrio }}" onChange="{{ onFPrio }}" style="font-size:13px">
+          <option value="all">Todas las prioridades</option>
+          <option value="P1">P1 · Crítico</option>
+          <option value="P2">P2 · Importante</option>
+          <option value="P3">P3 · Edge / Visual</option>
+        </select>
+        <select value="{{ fSec }}" onChange="{{ onFSec }}" style="font-size:13px">
+          <option value="all">Todas las secciones</option>
+          <sc-for list="{{ sections }}" as="sec" hint-placeholder-count="3">
+            <option value="{{ sec }}">{{ sec }}</option>
+          </sc-for>
+        </select>
+        <sc-if value="{{ hasFilters }}" hint-placeholder-val="{{ false }}">
+          <button onClick="{{ clearFilters }}" style="font-size:12px; color:#C0392B; border:1px solid #EBC5C0; border-radius:6px; padding:6px 11px; background:transparent; cursor:pointer">Limpiar filtros</button>
+        </sc-if>
+        <div style="flex:1"></div>
+        <button onClick="{{ copyTable }}" style="font-size:12px; color:#1A3356; border:1px solid #D7DDE5; border-radius:6px; padding:6px 11px; background:#fff; cursor:pointer">{{ copyLabel }}</button>
+        <button onClick="{{ downloadPdf }}" style="font-size:12px; color:#fff; border:1px solid #1A3356; border-radius:6px; padding:6px 11px; background:#1A3356; cursor:pointer; display:flex; align-items:center; gap:6px">
+          <i class="ti ti-file-type-pdf" aria-hidden="true"></i>DESCARGAR PDF
+        </button>
+      </div>
+
+      <div style="padding:20px 20px 60px">
+        <sc-for list="{{ groups }}" as="g" hint-placeholder-count="4">
+          <div style="margin-bottom:26px">
+            <div style="display:flex; align-items:baseline; gap:8px; margin-bottom:10px; padding-bottom:6px; border-bottom:1px solid #E2E6EB">
+              <span style="font-size:12px; font-weight:500; color:#5A6675; letter-spacing:0.05em; text-transform:uppercase">{{ g.sec }}</span>
+              <span style="font-size:11px; color:#A6B0BC">{{ g.count }}</span>
+            </div>
+            <div style="display:grid; grid-template-columns:repeat(auto-fill, minmax(210px, 1fr)); gap:10px">
+              <sc-for list="{{ g.items }}" as="tc" hint-placeholder-count="6">
+                <div onClick="{{ tc.open }}" style="background:#fff; border-radius:10px; border:1px solid #E2E6EB; padding:13px 14px; text-align:left; cursor:pointer; display:flex; flex-direction:column; gap:8px; min-height:118px">
+                  <div style="{{ tc.barStyle }}"></div>
+                  <div style="font-family:ui-monospace, SFMono-Regular, Menlo, monospace; font-size:10px; color:#8A94A2; letter-spacing:0.04em">{{ tc.id }}</div>
+                  <div style="font-size:13px; font-weight:500; line-height:1.35; text-wrap:pretty">{{ tc.name }}</div>
+                  <div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap; margin-top:auto">
+                    <span style="{{ tc.tipoStyle }}">{{ tc.tipo }}</span>
+                    <span style="{{ tc.prioStyle }}">{{ tc.prioridad }}</span>
+                    <span style="{{ tc.statStyle }}">{{ tc.statusLabel }}</span>
+                  </div>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+        </sc-for>
+        <sc-if value="{{ isEmpty }}" hint-placeholder-val="{{ false }}">
+          <div style="padding:60px 0; text-align:center; color:#8A94A2; font-size:14px">Ningún TC coincide con los filtros aplicados.</div>
+        </sc-if>
+      </div>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ isSlide }}" hint-placeholder-val="{{ false }}">
+    <div>
+      <div style="display:flex; align-items:center; gap:8px; padding:10px 20px; background:#fff; border-bottom:1px solid #E2E6EB; position:sticky; top:0; z-index:10">
+        <button onClick="{{ toGrid }}" style="display:flex; align-items:center; gap:7px; font-size:13px; color:#5A6675; padding:7px 13px; border-radius:6px; border:1px solid #D7DDE5; background:#fff; cursor:pointer">
+          <i class="ti ti-layout-grid" aria-hidden="true"></i> Vista general
+        </button>
+        <div style="flex:1"></div>
+        <button onClick="{{ onPrev }}" style="{{ prevStyle }}"><i class="ti ti-chevron-left" aria-hidden="true"></i></button>
+        <span style="font-size:13px; color:#5A6675; min-width:64px; text-align:center">{{ counter }}</span>
+        <button onClick="{{ onNext }}" style="{{ nextStyle }}"><i class="ti ti-chevron-right" aria-hidden="true"></i></button>
+      </div>
+
+      <div style="max-width:1120px; margin:22px auto; padding:0 20px 60px">
+        <div style="background:#fff; border-radius:12px; border:1px solid #E2E6EB; overflow:hidden">
+          <div style="background:#1A3356; padding:24px 28px">
+            <div style="display:flex; align-items:center; gap:10px; margin-bottom:10px">
+              <span style="font-family:ui-monospace, SFMono-Regular, Menlo, monospace; font-size:12px; color:rgba(255,255,255,0.6); letter-spacing:0.07em">{{ cur.id }}</span>
+              <span style="color:rgba(255,255,255,0.25)">·</span>
+              <span style="{{ cur.heroStatStyle }}">{{ cur.statusLabel }}</span>
+            </div>
+            <h2 style="color:#fff; font-size:20px; font-weight:500; margin:0 0 14px; line-height:1.35; letter-spacing:-0.01em">{{ cur.name }}</h2>
+            <div style="display:flex; gap:8px; flex-wrap:wrap">
+              <span style="{{ cur.tipoStyle }}">{{ cur.tipo }}</span>
+              <span style="font-size:11px; padding:3px 11px; border-radius:99px; background:rgba(255,255,255,0.14); color:#fff; font-weight:500">{{ cur.prioridad }}</span>
+              <span style="font-size:11px; padding:3px 11px; border-radius:99px; background:rgba(255,255,255,0.08); color:rgba(255,255,255,0.6)">{{ cur.seccion }}</span>
+            </div>
+          </div>
+
+          <div style="display:grid; grid-template-columns:1fr 1fr">
+            <div style="padding:16px 20px; border-top:1px solid #E2E6EB; border-right:1px solid #E2E6EB; background:#fff; min-height:152px; display:flex; flex-direction:column; gap:10px">
+              <div style="display:flex; align-items:center; gap:7px">
+                <span style="width:20px; height:20px; border-radius:99px; background:#1A3356; color:#fff; font-size:11px; display:flex; align-items:center; justify-content:center; flex-shrink:0">1</span>
+                <i class="ti ti-target" style="font-size:14px; color:#5A6675" aria-hidden="true"></i>
+                <span style="font-size:11px; font-weight:500; letter-spacing:0.06em; text-transform:uppercase; color:#5A6675">Objetivo</span>
+              </div>
+              <p style="font-size:14px; margin:0; line-height:1.65; text-wrap:pretty">{{ cur.objetivo }}</p>
+            </div>
+
+            <div style="padding:16px 20px; border-top:1px solid #E2E6EB; background:#fff; min-height:152px; display:flex; flex-direction:column; gap:10px">
+              <div style="display:flex; align-items:center; gap:7px">
+                <span style="width:20px; height:20px; border-radius:99px; background:#1A3356; color:#fff; font-size:11px; display:flex; align-items:center; justify-content:center; flex-shrink:0">2</span>
+                <i class="ti ti-settings-2" style="font-size:14px; color:#5A6675" aria-hidden="true"></i>
+                <span style="font-size:11px; font-weight:500; letter-spacing:0.06em; text-transform:uppercase; color:#5A6675">Precondición</span>
+              </div>
+              <div style="font-size:13px; line-height:1.65">
+                <div style="margin-bottom:6px"><span style="color:#5A6675; font-weight:500">Usuario: </span>{{ cur.preU }}</div>
+                <div><span style="color:#5A6675; font-weight:500">Estado previo: </span>{{ cur.preE }}</div>
+                <div style="margin-top:9px; padding:7px 10px; background:#F4F6F8; border-radius:6px; font-size:12px; color:#8A94A2">
+                  <i class="ti ti-server" style="font-size:12px; margin-right:5px" aria-hidden="true"></i>Ambiente: <span style="{{ cur.ambienteStyle }}">{{ cur.ambiente }}</span>
+                </div>
+              </div>
+            </div>
+
+            <div style="padding:16px 20px; border-top:1px solid #E2E6EB; border-right:1px solid #E2E6EB; background:#fff; min-height:152px; display:flex; flex-direction:column; gap:10px">
+              <div style="display:flex; align-items:center; gap:7px">
+                <span style="width:20px; height:20px; border-radius:99px; background:#1A3356; color:#fff; font-size:11px; display:flex; align-items:center; justify-content:center; flex-shrink:0">3</span>
+                <i class="ti ti-list-numbers" style="font-size:14px; color:#5A6675" aria-hidden="true"></i>
+                <span style="font-size:11px; font-weight:500; letter-spacing:0.06em; text-transform:uppercase; color:#5A6675">Pasos de ejecución</span>
+              </div>
+              <ol style="margin:0; padding-left:18px; font-size:13px; line-height:1.7; display:flex; flex-direction:column; gap:3px">
+                <sc-for list="{{ cur.pasos }}" as="p" hint-placeholder-count="3">
+                  <li>{{ p }}</li>
+                </sc-for>
+              </ol>
+            </div>
+
+            <div style="padding:16px 20px; border-top:1px solid #E2E6EB; background:#fff; min-height:152px; display:flex; flex-direction:column; gap:10px">
+              <div style="display:flex; align-items:center; gap:7px">
+                <span style="width:20px; height:20px; border-radius:99px; background:#1A3356; color:#fff; font-size:11px; display:flex; align-items:center; justify-content:center; flex-shrink:0">4</span>
+                <i class="ti ti-circle-check" style="font-size:14px; color:#5A6675" aria-hidden="true"></i>
+                <span style="font-size:11px; font-weight:500; letter-spacing:0.06em; text-transform:uppercase; color:#5A6675">Resultado esperado</span>
+              </div>
+              <p style="font-size:13px; margin:0; line-height:1.65; text-wrap:pretty">{{ cur.resultadoEsperado }}</p>
+              <div style="display:flex; flex-direction:column; gap:5px">
+                <sc-for list="{{ cur.alertas }}" as="a" hint-placeholder-count="0">
+                  <div style="background:#FDF3E3; border-radius:6px; padding:6px 10px; font-size:12px; color:#8A5A00; line-height:1.5">{{ a }}</div>
+                </sc-for>
+              </div>
+            </div>
+
+            <div style="padding:16px 20px; border-top:1px solid #E2E6EB; border-right:1px solid #E2E6EB; background:#fff; min-height:152px; display:flex; flex-direction:column; gap:10px">
+              <div style="display:flex; align-items:center; gap:7px">
+                <span style="width:20px; height:20px; border-radius:99px; background:#1A3356; color:#fff; font-size:11px; display:flex; align-items:center; justify-content:center; flex-shrink:0">5</span>
+                <i class="ti ti-paperclip" style="font-size:14px; color:#5A6675" aria-hidden="true"></i>
+                <span style="font-size:11px; font-weight:500; letter-spacing:0.06em; text-transform:uppercase; color:#5A6675">Evidencia</span>
+              </div>
+              <input type="text" value="{{ cur.evidencia }}" onChange="{{ onEvidencia }}" placeholder="ej: TC-HOME-007_ok.png" style="width:100%; font-size:13px" />
+              <sc-if value="{{ cur.hasEvidenciaImg }}" hint-placeholder-val="{{ false }}">
+                {{ cur.evidenciaMedia }}
+              </sc-if>
+              <div style="font-size:12px; color:#8A94A2; line-height:1.5">Convención: <span style="font-family:ui-monospace, Menlo, monospace">_ok.png</span> / <span style="font-family:ui-monospace, Menlo, monospace">_nok.png</span> · varias capturas: sufijo a, b · video: .mp4</div>
+            </div>
+
+            <div style="padding:16px 20px; border-top:1px solid #E2E6EB; background:#F0F5FC; min-height:152px; display:flex; flex-direction:column; gap:10px">
+              <div style="display:flex; align-items:center; gap:7px">
+                <span style="width:20px; height:20px; border-radius:99px; background:#1A56A8; color:#fff; font-size:11px; display:flex; align-items:center; justify-content:center; flex-shrink:0">6</span>
+                <i class="ti ti-report-analytics" style="font-size:14px; color:#1A56A8" aria-hidden="true"></i>
+                <span style="font-size:11px; font-weight:500; letter-spacing:0.06em; text-transform:uppercase; color:#1A56A8">Resultado de ejecución</span>
+              </div>
+              <div style="display:flex; gap:7px; flex-wrap:wrap">
+                <sc-for list="{{ statusButtons }}" as="b" hint-placeholder-count="4">
+                  <button onClick="{{ b.set }}" style="{{ b.style }}">{{ b.label }}</button>
+                </sc-for>
+              </div>
+              <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px">
+                <input type="text" value="{{ cur.tester }}" onChange="{{ onTester }}" placeholder="Tester" style="font-size:13px" />
+                <input type="date" value="{{ cur.fecha }}" onChange="{{ onFecha }}" style="font-size:13px" />
+              </div>
+              <textarea value="{{ cur.observaciones }}" onChange="{{ onObs }}" placeholder="Observaciones — bug ID, detalles relevantes..." style="width:100%; height:60px; font-size:13px; resize:vertical"></textarea>
+              <sc-if value="{{ cur.isNok }}" hint-placeholder-val="{{ false }}">
+                <div style="background:#FBECEA; border-radius:6px; padding:7px 10px; font-size:12px; color:#A5311F; line-height:1.5">
+                  <i class="ti ti-alert-triangle" style="font-size:13px; margin-right:5px" aria-hidden="true"></i>Reportar bug con la plantilla de QA-TESTING-GUIDE.md, sección 7.
+                </div>
+              </sc-if>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;headerTitle&quot;:{&quot;editor&quot;:&quot;text&quot;,&quot;default&quot;:&quot;QA — HOME (Web) · Mi DOCTA&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;headerSubtitle&quot;:{&quot;editor&quot;:&quot;text&quot;,&quot;default&quot;:&quot;Municipalidad de Córdoba · v2.2 · Vista Vecino&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;groupBy&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;Sección&quot;,&quot;Prioridad&quot;,&quot;Estado&quot;],&quot;default&quot;:&quot;Sección&quot;,&quot;tsType&quot;:&quot;string&quot;}}">
+class Component extends DCLogic {
+  static RAW = [
+    { id:"TC-HOME-001", name:"Logo 'Mi DOCTA' navega a Inicio", tipo:"Happy path", prioridad:"P2", seccion:"1 · Header y branding",
+      objetivo:"Verificar que el logo 'Mi DOCTA' navega al HOME desde cualquier módulo.",
+      pre:{ u:"Vecino logueado (220288219487)", e:"Usuario en módulo secundario (no en HOME)." },
+      pasos:["Navegar a cualquier módulo secundario (ej. Reclamos, Turnos).","Click en el logo 'Mi DOCTA' (esquina superior izquierda)."],
+      resultadoEsperado:"Navega al HOME.",
+      ambiente:"TEST", status:"ok", tester:"Carla Contreras", fecha:"2026-08-14",
+      evidencia:"TC-HOME-001_ok.mp4", evidenciaSrc:"evidencia/TC-HOME-001_ok.mp4",
+      observaciones:"Se navega al Home correctamente" },
+    { id:"TC-HOME-002", name:"Saludo muestra el nombre real del usuario", tipo:"Happy path", prioridad:"P1", seccion:"1 · Header y branding",
+      objetivo:"Verificar que el saludo muestra el nombre real del usuario logueado, nunca un valor hardcodeado.",
+      pre:{ u:"Vecino logueado (220288219487)", e:"Sin estado previo especial." },
+      pasos:["Login con usuario 'Giuliana'.","Navegar al HOME.","Observar el texto de saludo en el header."],
+      resultadoEsperado:"Muestra '¡Hola Giuliana!' con el nombre real. Nunca 'Hola undefined!' ni 'Hola null!'.",
+      ambiente:"PRUEBA", status:"ok", tester:"Carla Contreras", fecha:"2026-08-14",
+      evidencia:"TC-HOME-002_ok.png", evidenciaSrc:"evidencia/TC-HOME-002_ok.png",
+      observaciones:"\"Hola Carlos!\" con el nombre real, nunca un valor fijo." },
+    { id:"TC-HOME-003", name:"Saludo con nombre ausente (Edge)", tipo:"Edge", prioridad:"P3", seccion:"1 · Header y branding",
+      objetivo:"Verificar fallback razonable cuando el campo 'nombre' del usuario está vacío o ausente.",
+      pre:{ u:"Usuario sin campo 'nombre' en el sistema.", e:"El usuario existe pero sin nombre configurado." },
+      pasos:["Login con usuario sin campo 'nombre'.","Navegar al HOME.","Observar el texto de saludo."],
+      resultadoEsperado:"No muestra '¡Hola undefined!' ni '¡Hola null!'. Fallback razonable (ej. '¡Hola!' sin nombre)." },
+    { id:"TC-HOME-004", name:"Ícono de perfil", tipo:"Happy path", prioridad:"P2", seccion:"1 · Header y branding",
+      objetivo:"Verificar que el ícono de perfil abre el menú/pantalla de perfil.",
+      pre:{ u:"Vecino logueado (220288219487)", e:"HOME cargado." },
+      pasos:["Click en el ícono de perfil en el header."],
+      resultadoEsperado:"Abre el menú o pantalla de perfil.",
+      ambiente:"PRUEBA", status:"ok", tester:"Carla Contreras", fecha:"2026-08-14",
+      evidencia:"TC-HOME-004_ok.png", evidenciaSrc:"evidencia/TC-HOME-004_ok.png",
+      observaciones:"Se visualiza correctamente el perfil." },
+    { id:"TC-HOME-005", name:"Ícono de notificaciones (campana)", tipo:"Happy path", prioridad:"P2", seccion:"1 · Header y branding",
+      objetivo:"Verificar que el ícono de campana abre el panel de notificaciones.",
+      pre:{ u:"Vecino logueado (220288219487)", e:"HOME cargado." },
+      pasos:["Click en la campana de notificaciones en el header."],
+      resultadoEsperado:"Abre el panel de notificaciones.",
+      ambiente:"PRUEBA", status:"ok", tester:"Carla Contreras", fecha:"2026-08-14",
+      evidencia:"TC-HOME-005_ok.png", evidenciaSrc:"evidencia/TC-HOME-005_ok.png",
+      observaciones:"Se abre correctamente el panel de notificaciones." },
+    { id:"TC-HOME-006", name:"Badge de notificaciones con volumen alto (Edge)", tipo:"Edge", prioridad:"P3", seccion:"1 · Header y branding",
+      objetivo:"Verificar que el badge de notificaciones no rompe el layout del header con un número alto.",
+      pre:{ u:"Vecino logueado (220288219487)", e:"HOME cargado." },
+      pasos:["Observar el badge sobre la campana en el header."],
+      resultadoEsperado:"El número no rompe el layout del header (ej. muestra '9+' en vez del número exacto).",
+      ambiente:"PRUEBA", status:"ok", tester:"Carla Contreras", fecha:"2026-08-14",
+      evidencia:"TC-HOME-006_ok_a.png, TC-HOME-006_ok_b.png",
+      evidenciaSrc:["evidencia/TC-HOME-006_ok_a.png","evidencia/TC-HOME-006_ok_b.png"],
+      observaciones:"El numero de notificaciones no rompe el haeder." },
+    { id:"TC-HOME-007", name:"Sidebar carga colapsado por defecto", tipo:"Happy path", prioridad:"P1", seccion:"2 · Sidebar",
+      objetivo:"Verificar que al llegar al HOME por primera vez en la sesión, el sidebar se muestra colapsado.",
+      pre:{ u:"Vecino logueado (220288219487)", e:"Sin sesión activa previa." },
+      pasos:["Login.","Navegar al HOME.","Observar el estado del sidebar."],
+      resultadoEsperado:"El sidebar se muestra colapsado: solo íconos, sin texto ni labels.",
+      ambiente:"PRUEBA", status:"ok", tester:"Carla Contreras", fecha:"2026-08-14",
+      evidencia:"TC-HOME-007_ok.png", evidenciaSrc:"evidencia/TC-HOME-007_ok.png",
+      observaciones:"El sedebar se muestra colapsado correctamente." },
+    { id:"TC-HOME-008", name:"Expandir el sidebar con la flecha '>'", tipo:"Happy path", prioridad:"P1", seccion:"2 · Sidebar",
+      objetivo:"Verificar que la flecha '>' expande el sidebar mostrando todos sus elementos.",
+      pre:{ u:"Vecino logueado (220288219487)", e:"Sidebar colapsado (estado por defecto)." },
+      pasos:["Click en la flecha '>' ubicada arriba del ícono de Inicio."],
+      resultadoEsperado:"El sidebar se expande mostrando: label de cada ítem, grilla DOCTA MIA (8 íconos), toggle Modo Persona Mayor y tarjeta de contacto. El layout del contenido principal no se rompe.",
+      ambiente:"PRUEBA", status:"ok", tester:"Carla Contreras", fecha:"2026-08-14",
+      evidencia:"TC-HOME-008_ok.png", evidenciaSrc:"evidencia/TC-HOME-008_ok.png",
+      observaciones:"El sedebar se expande correctamente." },
+    { id:"TC-HOME-009", name:"Colapsar de nuevo el sidebar", tipo:"Happy path", prioridad:"P2", seccion:"2 · Sidebar",
+      objetivo:"Verificar que el sidebar vuelve al estado colapsado sin dejar labels residuales.",
+      pre:{ u:"Vecino logueado (220288219487)", e:"Sidebar expandido (TC-HOME-008 OK)." },
+      pasos:["Con el sidebar expandido, click en la flecha (ahora apuntando en sentido contrario)."],
+      resultadoEsperado:"Vuelve al estado colapsado sin dejar labels residuales.",
+      ambiente:"PRUEBA", status:"ok", tester:"Carla Contreras", fecha:"2026-08-14",
+      evidencia:"TC-HOME-009_ok.mp4", evidenciaSrc:"evidencia/TC-HOME-009_ok.mp4",
+      observaciones:"El sedebar vuelve al estado colapsado correctamente." },
+    { id:"TC-HOME-010", name:"Accesos del sidebar navegan correctamente (8 ítems)", tipo:"Happy path", prioridad:"P1", seccion:"2 · Sidebar",
+      objetivo:"Verificar que los 8 ítems del sidebar navegan a sus destinos correctos.",
+      pre:{ u:"Vecino logueado (220288219487)", e:"Sidebar expandido (TC-HOME-008 OK)." },
+      pasos:["Click en 'Inicio' → navega al HOME.","Click en 'Escritorio Empleado' → vista de empleado.","Click en 'Tablero de Datos' (nuevo) → [A CONFIRMAR con PO].","Click en 'Representaciones' → módulo Representaciones.","Click en 'Escucha Activa' → módulo Escucha Activa.","Click en 'Guía de Trámites' → iframe/módulo Guía de Trámites.","Click en 'Interacciones' (nuevo) → [A CONFIRMAR].","Click en 'Contacto' → pantalla/formulario de Contacto."],
+      resultadoEsperado:"Cada ítem navega a su destino correspondiente.",
+      alertas:["⚠️ 'Escritorio Empleado' sigue visible para rol Vecino — verificar si se corrigió desde v1.","⚠️ 'Tablero de Datos' e 'Interacciones' son nuevos sin documentación."],
+      ambiente:"PRUEBA", status:"ok", tester:"Carla Contreras", fecha:"2026-08-14",
+      evidencia:"TC-HOME-010_ok.png", evidenciaSrc:"evidencia/TC-HOME-010_ok.png",
+      observaciones:"Cada item redirige correctamente a donde deberia." },
+    { id:"TC-HOME-011", name:"Ítem del menú sin permiso para el rol actual (Negativo)", tipo:"Negativo", prioridad:"P2", seccion:"2 · Sidebar",
+      objetivo:"Verificar que un Vecino no puede acceder a 'Escritorio Empleado' directamente por URL.",
+      pre:{ u:"Vecino logueado (220288219487)", e:"Usuario logueado como Vecino." },
+      pasos:["Acceder directamente por URL a la ruta de 'Escritorio Empleado'."],
+      resultadoEsperado:"El sistema rechaza el acceso o redirige a una pantalla de error/permisos.",
+      ambiente:"PRUEBA", status:"ok", tester:"Carla Contreras", fecha:"2026-08-14",
+      evidencia:"TC-HOME-011_ok.png", evidenciaSrc:"evidencia/TC-HOME-011_ok.png",
+      observaciones:"Cada elemento redirige correctamente a donde deberia." },
+    { id:"TC-HOME-012", name:"Activar/desactivar Modo Persona Mayor", tipo:"Happy path", prioridad:"P1", seccion:"2 · Sidebar",
+      objetivo:"Verificar que el toggle 'Modo Persona Mayor' activa y desactiva la interfaz de accesibilidad.",
+      pre:{ u:"Vecino logueado (220288219487)", e:"Sidebar expandido (TC-HOME-008 OK)." },
+      pasos:["Localizar el toggle 'Modo Persona Mayor' (debajo de la grilla DOCTA MIA).","Click para activar. Verificar que la interfaz cambia.","Click de nuevo para desactivar. Verificar que vuelve al estado normal."],
+      resultadoEsperado:"Activa/desactiva la interfaz de accesibilidad según ENGRAM.md RN-009.",
+      ambiente:"PRUEBA", status:"ok", tester:"Carla Contreras", fecha:"2026-08-14",
+      evidencia:"TC-HOME-012_ok_a.png, TC-HOME-012_ok_b.png",
+      evidenciaSrc:["evidencia/TC-HOME-012_ok_a.png","evidencia/TC-HOME-012_ok_b.png"],
+      observaciones:"Se activa/ desactiva correctamente Persona mayor." },
+    { id:"TC-HOME-013", name:"Grilla DOCTA MIA del sidebar (8 íconos)", tipo:"Happy path", prioridad:"P1", seccion:"2 · Sidebar",
+      objetivo:"Verificar que los 8 íconos de la grilla propia del sidebar navegan correctamente. DISTINTA al modal 'Descubrí más'.",
+      pre:{ u:"Usuario logueado.", e:"Sidebar expandido (TC-HOME-008 OK)." },
+      pasos:["Click en 'Salud' → módulo Salud.","Click en 'Automotor' → módulo Automotor.","Click en 'Licencia' → Licencia de Conducir.","Click en 'Documentos' → Archivos/Documentos.","Click en 'Turnos' → módulo Turnos.","Click en 'Deporte' → módulo Deporte.","Click en 'Cultura' → módulo Cultura.","Click en '+' (Ver más) → abre modal 'Descubrí más'."],
+      resultadoEsperado:"Cada ícono navega a su módulo. 'Ver más' abre el modal.",
+      alertas:["⚠️ 'Automotor' (sidebar) vs 'Vehículos' (modal): ¿mismo módulo? Confirmar con PO."] },
+    { id:"TC-HOME-014", name:"Tarjeta de contacto del sidebar", tipo:"Happy path", prioridad:"P3", seccion:"2 · Sidebar",
+      objetivo:"Verificar que la tarjeta de contacto del sidebar abre el canal correcto.",
+      pre:{ u:"Usuario logueado.", e:"Sidebar expandido (TC-HOME-008 OK)." },
+      pasos:["Localizar tarjeta 'Por dudas o consultas comunicate con nosotros'.","Click en la tarjeta."],
+      resultadoEsperado:"Abre un canal de contacto.",
+      alertas:["⚠️ Confirmar si va al mismo destino que el ítem 'Contacto' del menú o abre canal distinto."] },
+    { id:"TC-HOME-015", name:"Abrir modal desde 'Ver más' (Servicios Digitales)", tipo:"Happy path", prioridad:"P1", seccion:"3 · Modal 'Descubrí más'",
+      objetivo:"Verificar que 'Ver más' de Servicios Digitales abre el modal 'Descubrí más'.",
+      pre:{ u:"Usuario logueado.", e:"HOME cargado." },
+      pasos:["Localizar sección 'Servicios Digitales' en el HOME.","Click en 'Ver más' (esquina inferior derecha)."],
+      resultadoEsperado:"Abre el modal 'Descubrí más' con grilla completa de módulos y botón 'Personalizar'." },
+    { id:"TC-HOME-016", name:"Cada ícono del modal navega al módulo correcto", tipo:"Happy path", prioridad:"P1", seccion:"3 · Modal 'Descubrí más'",
+      objetivo:"Verificar que los 16 íconos del modal 'Descubrí más' navegan a sus módulos correctos.",
+      pre:{ u:"Usuario logueado.", e:"Modal 'Descubrí más' abierto (TC-HOME-015 OK)." },
+      pasos:["Inmuebles → módulo Inmuebles.","Vehículos → Automotor.","Licencia → Licencia de Conducir.","Turismo → módulo Turismo.","Deporte → módulo Deporte.","Proveedores → módulo Proveedores.","Cultura → módulo Cultura.","Expedientes → módulo Expedientes.","Movilidad → módulo Movilidad.","Gestiones → módulo Gestiones.","Salud → módulo Salud.","Mapas → módulo Mapas.","Transporte → Movilidad/Paradas.","Estacionamiento → módulo Estacionamiento.","Alimentos → verificar comportamiento.","PPT → no clickeable (ver TC-HOME-018)."],
+      resultadoEsperado:"Cada ícono navega a su módulo correspondiente.",
+      alertas:["⚠️ 'Automotor' y 'Movilidad/Transporte' pueden haberse renombrado — confirmar con PO.","⚠️ 'Alimentos' no está en el mapa de 27 módulos."] },
+    { id:"TC-HOME-017", name:"Botón 'Personalizar' del modal", tipo:"Happy path", prioridad:"P2", seccion:"3 · Modal 'Descubrí más'",
+      objetivo:"Verificar que 'Personalizar' permite configurar módulos favoritos/accesos rápidos.",
+      pre:{ u:"Usuario logueado.", e:"Modal 'Descubrí más' abierto (TC-HOME-015 OK)." },
+      pasos:["Click en 'Personalizar' dentro del modal."],
+      resultadoEsperado:"Abre flujo para elegir módulos como favoritos/accesos rápidos.",
+      alertas:["⚠️ Alcance exacto del flujo de personalización pendiente de confirmar con PO."] },
+    { id:"TC-HOME-018", name:"Ícono 'PPT' deshabilitado (Negativo)", tipo:"Negativo", prioridad:"P2", seccion:"3 · Modal 'Descubrí más'",
+      objetivo:"Verificar que el ícono 'PPT' (atenuado/gris en Figma) no reacciona al click o muestra 'Próximamente'.",
+      pre:{ u:"Usuario 2041625321", e:"Modal 'Descubrí más' abierto (TC-HOME-015 OK)." },
+      pasos:["Click en el ícono 'PPT' (aparece atenuado/gris)."],
+      resultadoEsperado:"No reacciona al click, o muestra 'Próximamente'. Nunca navega a pantalla rota.",
+      alertas:["⚠️ Confirmar con PO qué significa 'PPT' antes de reportar como bug."],
+      ambiente:"TEST", status:"nok", tester:"Mikael Marovich", fecha:"2026-08-14",
+      evidencia:"TC-HOME-018_nok.png", evidenciaSrc:"evidencia/TC-HOME-018_nok.png",
+      observaciones:"No se visualiza el servicio al momento de el testeo ya que no se subió todavía el servicio." },
+    { id:"TC-HOME-019", name:"Cerrar el modal sin seleccionar nada (Edge)", tipo:"Edge", prioridad:"P3", seccion:"3 · Modal 'Descubrí más'",
+      objetivo:"Verificar que cerrar el modal sin seleccionar vuelve al HOME sin cambios ni errores.",
+      pre:{ u:"Usuario logueado.", e:"Modal 'Descubrí más' abierto." },
+      pasos:["Con el modal abierto, cerrarlo usando la X, click afuera, o Escape, sin haber clickeado ningún ícono."],
+      resultadoEsperado:"Vuelve al HOME sin cambios ni errores." },
+    { id:"TC-HOME-020", name:"Buscar un trámite válido", tipo:"Happy path", prioridad:"P1", seccion:"4 · Buscador de trámites",
+      objetivo:"Verificar que la búsqueda de un trámite válido redirige a Guía de Trámites con resultados relevantes.",
+      pre:{ u:"Usuario logueado.", e:"HOME cargado. Banner de buscador visible." },
+      pasos:["Localizar el buscador de trámites en el banner superior.","Ingresar: 'licencia de conducir'.","Presionar Enter o el botón de búsqueda."],
+      resultadoEsperado:"Redirige a Guía de Trámites con resultados relevantes." },
+    { id:"TC-HOME-021", name:"Buscar con el campo vacío (Negativo)", tipo:"Negativo", prioridad:"P2", seccion:"4 · Buscador de trámites",
+      objetivo:"Verificar que no se navega a una búsqueda vacía al presionar buscar sin texto.",
+      pre:{ u:"Usuario logueado.", e:"HOME cargado. Campo de buscador vacío." },
+      pasos:["Sin ingresar texto en el buscador, presionar Enter o el botón de búsqueda."],
+      resultadoEsperado:"No navega a una búsqueda vacía. El sistema ignora la acción o muestra validación." },
+    { id:"TC-HOME-022", name:"Buscar con texto muy largo (Edge)", tipo:"Edge", prioridad:"P3", seccion:"4 · Buscador de trámites",
+      objetivo:"Verificar que el buscador no rompe el layout ni genera error de servidor con texto muy largo.",
+      pre:{ u:"Usuario logueado.", e:"HOME cargado." },
+      pasos:["Ingresar 500 caracteres repetidos en el buscador.","Presionar Enter o el botón de búsqueda."],
+      resultadoEsperado:"No rompe el layout ni genera error de servidor." },
+    { id:"TC-HOME-023", name:"Buscar con caracteres especiales (Negativo / XSS)", tipo:"Negativo", prioridad:"P2", seccion:"4 · Buscador de trámites",
+      objetivo:"Verificar que el buscador trata caracteres especiales como texto plano sin ejecutarlos.",
+      pre:{ u:"Usuario logueado.", e:"HOME cargado." },
+      pasos:["Ingresar en el buscador un payload de script (etiqueta script con alert).","Presionar Enter."],
+      resultadoEsperado:"El input se trata como texto plano. No ejecuta ningún script." },
+    { id:"TC-HOME-024", name:"Botones de trámite frecuente navegan correctamente", tipo:"Happy path", prioridad:"P1", seccion:"4 · Buscador de trámites",
+      objetivo:"Verificar que los 5 botones de trámite frecuente navegan a sus trámites correctos.",
+      pre:{ u:"Usuario logueado.", e:"HOME cargado." },
+      pasos:["Click en 'Licencia de Conducir' → trámite en Guía de Trámites.","Click en 'Alta de automotor' → trámite de alta.","Click en 'Exención de Estacionamiento' → trámite de exención.","Click en 'Nuevo ejemplar de D.N.I.' → trámite de D.N.I.","Click en 'Comercio e Industria - Inscripción de actividad' → trámite de inscripción."],
+      resultadoEsperado:"Cada botón navega al trámite correspondiente en Guía de Trámites." },
+    { id:"TC-HOME-025", name:"Tarjetas de Servicios Digitales navegan correctamente", tipo:"Happy path", prioridad:"P2", seccion:"5 · Servicios Digitales",
+      objetivo:"Verificar que las 6 tarjetas de 'Servicios Digitales' navegan a sus destinos correctos.",
+      pre:{ u:"Usuario logueado.", e:"HOME cargado." },
+      pasos:["Click en 'Turnero Digital'.","Click en 'Trámites Digitales'.","Click en 'Portal Tributario'.","Click en 'Carnet de Conductor Digital'.","Click en 'Habilitación de Negocios On Line'.","Click en 'Portal de Compras Públicas'."],
+      resultadoEsperado:"Cada tarjeta navega a su servicio correspondiente.",
+      alertas:["⚠️ HALLAZGO ABIERTO #1: El set de 6 tarjetas varía entre capturas de Figma. Confirmar con diseño cuál es el set real antes de ejecutar."],
+      status:"descartado", observaciones:"Descartado — el diseño de Figma cambió y esta sección ya no aplica." },
+    { id:"TC-HOME-026", name:"'Ver más' de Servicios Digitales abre el modal", tipo:"Happy path", prioridad:"P2", seccion:"5 · Servicios Digitales",
+      objetivo:"Verificar que 'Ver más' de Servicios Digitales abre el modal 'Descubrí más'.",
+      pre:{ u:"Usuario logueado.", e:"HOME cargado." },
+      pasos:["Click en 'Ver más' de la sección Servicios Digitales."],
+      resultadoEsperado:"Abre el mismo modal 'Descubrí más' documentado en la sección 3.",
+      status:"descartado", observaciones:"Descartado — el diseño de Figma cambió y esta sección ya no aplica." },
+    { id:"TC-HOME-027", name:"Las 7 tabs están presentes y son clickeables", tipo:"Happy path", prioridad:"P1", seccion:"6 · Tabs (7 tabs)",
+      objetivo:"Verificar que las 7 tabs de 'Tus cuentas y trámites' están presentes y responden al click.",
+      pre:{ u:"Usuario logueado.", e:"HOME cargado." },
+      pasos:["Localizar la sección 'Tus cuentas y trámites'.","Verificar presencia de las 7 tabs: Mis Contribuciones, Mis Reclamos, Mis Turnos, Mis Comunicaciones, Mis Trámites, Mis Infracciones, Mis Juicios.","Click en cada tab."],
+      resultadoEsperado:"Las 7 tabs están presentes, son clickeables y cambian el contenido.",
+      alertas:["⚠️ 'Gestiones' ya no es tab en v2 final. Si aparece, es un bug."],
+      status:"descartado", observaciones:"Descartado — el diseño de Figma cambió y esta sección ya no aplica." },
+    { id:"TC-HOME-028", name:"Cambiar de tab actualiza el contenido completo", tipo:"Happy path", prioridad:"P1", seccion:"6 · Tabs (7 tabs)",
+      objetivo:"Verificar que al cambiar de tab se actualiza el contenido sin recargar la página.",
+      pre:{ u:"Usuario logueado.", e:"HOME cargado, tab 'Mis Contribuciones' activa." },
+      pasos:["Click en cada tab en orden.","Verificar que cambia texto, banner 'TU RESUMEN' y tarjetas.","Verificar tab activa resaltada en azul oscuro.","Verificar que NO recarga la página."],
+      resultadoEsperado:"Cambia texto, banner y tarjetas. Sin recarga. Tab activa resaltada en azul oscuro.",
+      status:"descartado", observaciones:"Descartado — el diseño de Figma cambió y esta sección ya no aplica." },
+    { id:"TC-HOME-029", name:"Tab activa persiste tras recargar (Edge)", tipo:"Edge", prioridad:"P3", seccion:"6 · Tabs (7 tabs)",
+      objetivo:"Verificar el comportamiento de la tab activa al recargar la página.",
+      pre:{ u:"Usuario logueado.", e:"Tab 'Mis Reclamos' activa." },
+      pasos:["Seleccionar 'Mis Reclamos'.","Recargar (F5).","Observar qué tab queda activa."],
+      resultadoEsperado:"A definir con PO: ¿vuelve a 'Contribuciones' por defecto o recuerda la última tab?",
+      alertas:["⚠️ Comportamiento esperado a definir con PO."],
+      status:"descartado", observaciones:"Descartado — el diseño de Figma cambió y esta sección ya no aplica." },
+    { id:"TC-HOME-030", name:"Resumen de Contribuciones con deuda", tipo:"Happy path", prioridad:"P1", seccion:"7 · Banner 'TU RESUMEN'",
+      objetivo:"Verificar que el banner 'TU RESUMEN' muestra correctamente la deuda de Contribuciones.",
+      pre:{ u:"Vecino con 3 de 4 cuentas vencidas, deuda total $126.250. (usuario real: 2041625321)", e:"Tab 'Mis Contribuciones' activa." },
+      pasos:["Navegar al HOME.","Verificar tab 'Mis Contribuciones' activa.","Observar el banner 'TU RESUMEN'."],
+      resultadoEsperado:"Banner: 'Tenés 3 pagos vencidos por $126.250', botón 'Pagar ahora', dona '3/4 Cuentas al día', 'INCLUYE: {lista}' coincide con tarjetas.",
+      ambiente:"TEST", status:"nok", tester:"Mikael Marovich", fecha:"2026-08-14",
+      evidencia:"TC-HOME-030_nok.png", evidenciaSrc:"evidencia/TC-HOME-030_nok.png",
+      observaciones:"Al momento de testear, el ambiente TEST y PROD no tienen implementado el diseño del banner 'TU RESUMEN' de Figma." },
+    { id:"TC-HOME-031", name:"Botón 'Pagar ahora' del resumen", tipo:"Happy path", prioridad:"P1", seccion:"7 · Banner 'TU RESUMEN'",
+      objetivo:"Verificar que 'Pagar ahora' abre el flujo de pago consolidado de los ítems vencidos.",
+      pre:{ u:"Vecino con contribuciones vencidas.", e:"TC-HOME-030 OK. Botón 'Pagar ahora' visible." },
+      pasos:["Click en el botón 'Pagar ahora' del banner 'TU RESUMEN'."],
+      resultadoEsperado:"Abre el flujo de pago consolidado de los ítems vencidos.",
+      status:"blocked", observaciones:"Bloqueado por dependencia de TC-HOME-030 (NO OK) — el banner 'TU RESUMEN' con el botón 'Pagar ahora' no está implementado en TEST/PROD." },
+    { id:"TC-HOME-032", name:"Resumen de Contribuciones todo al día", tipo:"Happy path", prioridad:"P1", seccion:"7 · Banner 'TU RESUMEN'",
+      objetivo:"Verificar el banner 'TU RESUMEN' cuando todas las contribuciones están al día.",
+      pre:{ u:"Vecino con 4/4 cuentas al día.", e:"Tab 'Mis Contribuciones' activa." },
+      pasos:["Navegar al HOME con este usuario.","Observar el banner 'TU RESUMEN'."],
+      resultadoEsperado:"Dona muestra '4/4'. No aparece el botón 'Pagar ahora'. Confirmar texto con diseño/PO.",
+      status:"blocked", observaciones:"Bloqueado por dependencia de TC-HOME-030 (NO OK) — el banner 'TU RESUMEN' no está implementado en TEST/PROD.",
+      alertas:["⚠️ Confirmar texto exacto del estado 'todo al día' con diseño/PO."] },
+    { id:"TC-HOME-033", name:"Resumen de Reclamos pendientes", tipo:"Happy path", prioridad:"P1", seccion:"7 · Banner 'TU RESUMEN'",
+      objetivo:"Verificar el banner 'TU RESUMEN' en la tab Reclamos con pendientes.",
+      pre:{ u:"Vecino con 2 de 3 reclamos pendientes.", e:"Tab 'Mis Reclamos' activa." },
+      pasos:["Navegar al HOME.","Click en 'Mis Reclamos'.","Observar el banner 'TU RESUMEN'."],
+      resultadoEsperado:"Banner: 'Tenés 2 reclamos pendientes' + dona '2/3' + 'INCLUYE: {lista}'. Sin botón de pago.",
+      status:"blocked", observaciones:"Bloqueado por dependencia de TC-HOME-030 (NO OK) — el banner 'TU RESUMEN' no está implementado en TEST/PROD." },
+    { id:"TC-HOME-034", name:"Consistencia entre 'INCLUYE' y las tarjetas (Edge)", tipo:"Edge", prioridad:"P2", seccion:"7 · Banner 'TU RESUMEN'",
+      objetivo:"Verificar que los ítems en 'INCLUYE' son exactamente los mismos que las tarjetas debajo.",
+      pre:{ u:"Vecino con ítems en cualquier tab con resumen.", e:"Tab activa con datos." },
+      pasos:["Observar la lista 'INCLUYE: ...' del banner.","Comparar ítem por ítem con las tarjetas debajo."],
+      resultadoEsperado:"Son exactamente los mismos ítems, sin omisiones ni duplicados.",
+      status:"blocked", observaciones:"Bloqueado por dependencia de TC-HOME-030 (NO OK) — el banner 'TU RESUMEN' no está implementado en TEST/PROD." },
+    { id:"TC-HOME-035", name:"Resumen con 0 ítems totales (Edge)", tipo:"Edge", prioridad:"P2", seccion:"7 · Banner 'TU RESUMEN'",
+      objetivo:"Verificar que con 0 ítems totales se muestra el estado vacío y no una dona '0/0'.",
+      pre:{ u:"Vecino sin ningún ítem del tipo de la tab activa.", e:"Tab activa sin datos." },
+      pasos:["Navegar al HOME.","Activar la tab sin ítems.","Observar el banner."],
+      resultadoEsperado:"Se muestra el banner de estado vacío, NO una dona '0/0'.",
+      status:"blocked", observaciones:"Bloqueado por dependencia de TC-HOME-030 (NO OK) — el banner 'TU RESUMEN' no está implementado en TEST/PROD." },
+    { id:"TC-HOME-036", name:"Tarjeta al día no muestra botón Pagar", tipo:"Happy path", prioridad:"P1", seccion:"8 · Contribuciones",
+      objetivo:"Verificar que una contribución al día no muestra el botón 'Pagar', solo 'Estás al día'.",
+      pre:{ u:"Vecino con Automotor 'AB123CE' al día. (usuario real: 20416253219)", e:"Tab 'Mis Contribuciones' activa." },
+      pasos:["Navegar al HOME.","Localizar la tarjeta de Automotor 'AB123CE'."],
+      resultadoEsperado:"La tarjeta muestra 'Estás al día'. No aparece el botón 'Pagar'.",
+      ambiente:"PROD", status:"ok", tester:"Mikael Marovich", fecha:"2026-08-14",
+      evidencia:"TC-HOME-036_ok.png", evidenciaSrc:"evidencia/TC-HOME-036_ok.png",
+      observaciones:"Al tener el día el vehículo ya no se visualiza el botón 'PAGAR'." },
+    { id:"TC-HOME-037", name:"Tarjeta vencida muestra monto y botón Pagar", tipo:"Happy path", prioridad:"P1", seccion:"8 · Contribuciones",
+      objetivo:"Verificar que una contribución vencida muestra todos sus datos y el botón Pagar funciona.",
+      pre:{ u:"Vecino con Inmueble 'Av. Colón 3440', $44.500, vencido hace 3 días, N° Catastral 112598110310658. (usuario real: 20416253219)", e:"Tab 'Mis Contribuciones' activa." },
+      pasos:["Localizar la tarjeta del Inmueble.","Verificar todos los datos.","Click en 'Pagar'."],
+      resultadoEsperado:"Visualizar el botón Pagar y al hacer click se habilita la pasarela de pagos.",
+      ambiente:"TEST", status:"nok", tester:"Mikael Marovich", fecha:"2026-08-14",
+      evidencia:"TC-HOME-037_ok.png", evidenciaSrc:"evidencia/TC-HOME-037_ok.png",
+      observaciones:"Se habilita la pasarela de pagos pero indica que ya está pagado, sin haber completado el procedimiento de pago ni aceptado el mismo." },
+    { id:"TC-HOME-038", name:"Tarjeta próxima a vencer (Automotor)", tipo:"Happy path", prioridad:"P2", seccion:"8 · Contribuciones",
+      objetivo:"Verificar que una contribución próxima a vencer muestra botón Pagar con color distinto al de vencida.",
+      pre:{ u:"Vecino con Automotor 'AB123CE', $17.200, vence en 5 días.", e:"Tab 'Mis Contribuciones' activa." },
+      pasos:["Localizar la tarjeta del Automotor.","Observar el color del botón 'Pagar' vs uno vencido."],
+      resultadoEsperado:"Muestra botón 'Pagar' en color distinto al de 'vencido' (confirmar paleta con diseño).",
+      status:"blocked", ambiente:"TEST", tester:"Mikael Marovich", fecha:"2026-08-14",
+      observaciones:"No se pudo probar — no hay usuario de prueba disponible con una contribución en esa condición (próxima a vencer)." },
+    { id:"TC-HOME-039", name:"Link 'Ver más ↗' de cada tarjeta", tipo:"Happy path", prioridad:"P2", seccion:"8 · Contribuciones",
+      objetivo:"Verificar que el link 'Ver más ↗' navega al detalle de esa contribución específica.",
+      pre:{ u:"Vecino con contribuciones. (usuario real: 20416253219)", e:"Tab 'Mis Contribuciones' activa." },
+      pasos:["Click en 'Ver más ↗' de cualquier tarjeta de contribución."],
+      resultadoEsperado:"Navega al detalle completo de esa contribución específica.",
+      ambiente:"TEST", status:"ok", tester:"Mikael Marovich", fecha:"2026-08-14",
+      evidencia:"TC-HOME-039_ok.png", evidenciaSrc:"evidencia/TC-HOME-039_ok.png",
+      observaciones:"En el diseño actual es un botón 'Ver más', pero en el ambiente TEST toda la card actúa como botón y al hacer click lleva al detalle de la contribución." },
+    { id:"TC-HOME-040", name:"Vencimiento con 0 días (Edge)", tipo:"Edge", prioridad:"P2", seccion:"8 · Contribuciones",
+      objetivo:"Verificar que un ítem vencido hoy no muestra el texto confuso 'Vencido hace 0 días'.",
+      pre:{ u:"Vecino con ítem vencido hoy (0 días).", e:"Tab 'Mis Contribuciones' activa." },
+      pasos:["Localizar tarjeta con vencimiento de hoy.","Observar el texto de vencimiento."],
+      resultadoEsperado:"No muestra 'Vencido hace 0 días'. Texto alternativo (ej. 'Vencido hoy').",
+      status:"blocked", ambiente:"TEST", tester:"Mikael Marovich", fecha:"2026-08-14",
+      observaciones:"No se pudo probar — no hay usuario de prueba disponible con una contribución vencida hoy (0 días)." },
+    { id:"TC-HOME-041", name:"Más de 3 ítems de contribución (Edge)", tipo:"Edge", prioridad:"P2", seccion:"8 · Contribuciones",
+      objetivo:"Verificar el comportamiento cuando el vecino tiene más de 3 contribuciones.",
+      pre:{ u:"Vecino con 5+ contribuciones.", e:"Tab 'Mis Contribuciones' activa." },
+      pasos:["Navegar al HOME.","Observar cuántas tarjetas se muestran y si hay paginación o 'Ver Todos'."],
+      resultadoEsperado:"Confirmar si hay acceso al resto (paginación, 'Ver Todos'). Definir con PO.",
+      alertas:["⚠️ 'Ver Todos' visible en Reclamos pero no confirmado en Contribuciones. Definir con PO."],
+      status:"blocked", ambiente:"TEST", tester:"Mikael Marovich", fecha:"2026-08-14",
+      observaciones:"No se pudo probar — no hay usuario de prueba disponible con 5+ contribuciones (mismo motivo que TC-HOME-040)." },
+    { id:"TC-HOME-042", name:"Estado vacío de Contribuciones ('SIN CONTRIBUCIONES')", tipo:"Edge", prioridad:"P1", seccion:"8 · Contribuciones",
+      objetivo:"Verificar el estado vacío cuando el vecino no tiene contribuciones asociadas.",
+      pre:{ u:"Vecino sin contribuciones en el sistema.", e:"Tab 'Mis Contribuciones' activa." },
+      pasos:["Navegar al HOME con este usuario.","Observar el contenido de la tab Contribuciones."],
+      resultadoEsperado:"Muestra 'No contás con contribuciones' + texto explicativo + botón 'Reportar'. Sin tarjetas.",
+      status:"blocked", ambiente:"TEST", tester:"Mikael Marovich", fecha:"2026-08-14",
+      observaciones:"No se pudo probar — no hay usuario de prueba disponible sin contribuciones asociadas." },
+    { id:"TC-HOME-043", name:"Botón 'Reportar' del estado vacío", tipo:"Happy path", prioridad:"P2", seccion:"8 · Contribuciones",
+      objetivo:"Verificar que el botón 'Reportar' abre el flujo para reportar contribución faltante.",
+      pre:{ u:"Vecino sin contribuciones.", e:"TC-HOME-042 OK. Botón 'Reportar' visible." },
+      pasos:["Click en el botón 'Reportar'."],
+      resultadoEsperado:"Abre el flujo para reportar una contribución faltante.",
+      status:"blocked", observaciones:"Bloqueado por dependencia de TC-HOME-042 — el estado vacío 'SIN CONTRIBUCIONES' solo existe en Figma, no está desarrollado en TEST/PROD." },
+    { id:"TC-HOME-044", name:"Reclamo con cada estado se muestra correctamente", tipo:"Happy path", prioridad:"P1", seccion:"9 · Reclamos",
+      objetivo:"Verificar que los distintos estados de reclamo se muestran con el color correcto.",
+      pre:{ u:"Vecino con reclamo 'Lampara Apagada' #2589641, 12/09/2022, Av. Colón 3440.", e:"Tab 'Mis Reclamos' activa." },
+      pasos:["Localizar reclamo 'Pendiente'. Verificar color: naranja/amarillo.","Localizar reclamo 'Cancelado'. Verificar color: rojo."],
+      resultadoEsperado:"Pendiente → naranja/amarillo. Cancelado → rojo.",
+      alertas:["⚠️ Estado 'Cumplido' (verde) de v1 no aparece en captura de v2 — confirmar si sigue siendo válido."],
+      status:"blocked", ambiente:"TEST", tester:"Mikael Marovich", fecha:"2026-08-14",
+      observaciones:"No se pudo probar — no hay usuario de prueba disponible con reclamos cargados." },
+    { id:"TC-HOME-045", name:"Link 'Ver más ↗' de cada reclamo", tipo:"Happy path", prioridad:"P2", seccion:"9 · Reclamos",
+      objetivo:"Verificar que el link 'Ver más ↗' navega al detalle del reclamo específico.",
+      pre:{ u:"Vecino con reclamos.", e:"Tab 'Mis Reclamos' activa." },
+      pasos:["Click en 'Ver más ↗' de cualquier reclamo."],
+      resultadoEsperado:"Navega al detalle de ese reclamo específico.",
+      status:"blocked", ambiente:"TEST", tester:"Mikael Marovich", fecha:"2026-08-14",
+      observaciones:"No se pudo probar — no hay usuario de prueba disponible con reclamos cargados (mismo motivo que TC-HOME-044)." },
+    { id:"TC-HOME-046", name:"Botón 'Ver Todos'", tipo:"Happy path", prioridad:"P2", seccion:"9 · Reclamos",
+      objetivo:"Verificar que 'Ver Todos' navega al listado completo de reclamos.",
+      pre:{ u:"Vecino con reclamos.", e:"Tab 'Mis Reclamos' activa." },
+      pasos:["Click en el botón 'Ver Todos'."],
+      resultadoEsperado:"Navega al listado completo de reclamos del vecino.",
+      status:"blocked", ambiente:"TEST", tester:"Mikael Marovich", fecha:"2026-08-14",
+      observaciones:"No se pudo probar — no hay usuario de prueba disponible con reclamos cargados (mismo motivo que TC-HOME-044)." },
+    { id:"TC-HOME-047", name:"Botón 'Nuevo Reclamo'", tipo:"Happy path", prioridad:"P1", seccion:"9 · Reclamos",
+      objetivo:"Verificar que 'Nuevo Reclamo' abre el formulario de carga.",
+      pre:{ u:"Vecino logueado. (usuario real: 20416253219)", e:"Tab 'Mis Reclamos' activa." },
+      pasos:["Click en el botón 'Nuevo Reclamo'."],
+      resultadoEsperado:"Abre el formulario de carga de reclamo nuevo.",
+      ambiente:"TEST", status:"ok", tester:"Mikael Marovich", fecha:"2026-08-14",
+      evidencia:"TC-HOME-047_ok.png", evidenciaSrc:"evidencia/TC-HOME-047_ok.png",
+      observaciones:"El diseño visual es el 'viejo' (no el rediseño de Figma reciente), pero comparado con el Figma vigente el comportamiento/contenido es el mismo." },
+    { id:"TC-HOME-048", name:"Estado vacío de Reclamos ('SIN RECLAMOS')", tipo:"Edge", prioridad:"P1", seccion:"9 · Reclamos",
+      objetivo:"Verificar el estado vacío de la tab Reclamos cuando el vecino no tiene reclamos.",
+      pre:{ u:"Vecino sin reclamos.", e:"Tab 'Mis Reclamos' activa." },
+      pasos:["Navegar al HOME con este usuario.","Observar el contenido de la tab Reclamos."],
+      resultadoEsperado:"[INFERIDO] 'No contás con reclamos' + acción equivalente. Confirmar con Figma.",
+      alertas:["⚠️ INFERIDO — confirmar texto exacto con captura de Figma."],
+      status:"blocked", ambiente:"TEST", tester:"Mikael Marovich", fecha:"2026-08-14",
+      observaciones:"No se pudo probar — el estado vacío de Reclamos solo existe en Figma, no está desarrollado en TEST/PROD." },
+    { id:"TC-HOME-049", name:"Reclamo con dirección muy larga (Edge)", tipo:"Edge", prioridad:"P3", seccion:"9 · Reclamos",
+      objetivo:"Verificar que una dirección de 200 caracteres no rompe el layout de la tarjeta.",
+      pre:{ u:"Vecino con reclamo con dirección de 200 caracteres.", e:"Tab 'Mis Reclamos' activa." },
+      pasos:["Localizar tarjeta con dirección larga.","Observar el layout."],
+      resultadoEsperado:"El texto no rompe el layout (truncado con ellipsis o wrapping correcto).",
+      status:"blocked", ambiente:"TEST", tester:"Mikael Marovich", fecha:"2026-08-14",
+      observaciones:"No se pudo probar — no hay usuario de prueba disponible con reclamos cargados (mismo motivo que TC-HOME-044)." },
+    { id:"TC-HOME-050", name:"Resumen de Turnos [INFERIDO]", tipo:"Happy path", prioridad:"P2", seccion:"10 · Turnos [INFERIDO]",
+      objetivo:"[INFERIDO] Verificar que el banner 'TU RESUMEN' en tab Turnos muestra la cantidad correcta.",
+      pre:{ u:"Vecino con turnos.", e:"Tab 'Mis Turnos' activa." },
+      pasos:["Navegar al HOME.","Click en 'Mis Turnos'.","Observar el banner 'TU RESUMEN'."],
+      resultadoEsperado:"[INFERIDO] Banner con cantidad de turnos. Confirmar contra Figma antes de ejecutar.",
+      alertas:["⚠️ INFERIDO — no se encontró frame 'TURNOS' en v2 final. Pedir a Mati/diseño."],
+      status:"blocked", ambiente:"TEST", tester:"Carla Contreras", fecha:"2026-08-19", observaciones:"Pendiente frame Figma de Turnos — pedir a Mati/Diseño" },
+    { id:"TC-HOME-051", name:"Botón 'Cancelar' en turno cancelable [INFERIDO]", tipo:"Happy path", prioridad:"P1", seccion:"10 · Turnos [INFERIDO]",
+      objetivo:"[INFERIDO] Verificar que 'Cancelar' está en Próximos/Pendientes y ausente en Vencidos.",
+      pre:{ u:"Vecino con turnos en distintos estados.", e:"Tab 'Mis Turnos' activa." },
+      pasos:["Localizar turno 'Próximo'. Verificar botón 'Cancelar' presente.","Localizar turno 'Vencido'. Verificar botón 'Cancelar' ausente."],
+      resultadoEsperado:"[INFERIDO] Botón 'Cancelar': presente en Próximo/Pendiente, ausente en Vencido.",
+      alertas:["⚠️ INFERIDO — confirmar con captura de Figma."],
+      status:"blocked", ambiente:"TEST", tester:"Carla Contreras", fecha:"2026-08-19", observaciones:"Pendiente frame Figma de Turnos" },
+    { id:"TC-HOME-052", name:"Estado vacío de Turnos [INFERIDO]", tipo:"Edge", prioridad:"P1", seccion:"10 · Turnos [INFERIDO]",
+      objetivo:"[INFERIDO] Verificar el banner de estado vacío en la tab Turnos.",
+      pre:{ u:"Vecino sin turnos.", e:"Tab 'Mis Turnos' activa." },
+      pasos:["Navegar al HOME sin turnos.","Click en 'Mis Turnos'.","Observar el contenido."],
+      resultadoEsperado:"[INFERIDO] Banner de estado vacío equivalente al de Contribuciones/Reclamos.",
+      alertas:["⚠️ INFERIDO — confirmar texto y botón con captura de Figma."],
+      status:"blocked", ambiente:"TEST", tester:"Carla Contreras", fecha:"2026-08-19", observaciones:"Pendiente frame Figma de Turnos" },
+    { id:"TC-HOME-053", name:"Contenido de la tab Comunicaciones [PENDIENTE]", tipo:"Happy path", prioridad:"P2", seccion:"11 · Comunicaciones [INFERIDO]",
+      objetivo:"[PENDIENTE] Verificar el contenido de la tab 'Mis Comunicaciones'.",
+      pre:{ u:"Vecino con comunicaciones.", e:"Tab 'Mis Comunicaciones' activa." },
+      pasos:["[PENDIENTE] Definir pasos una vez recibida la captura de Figma."],
+      resultadoEsperado:"[PENDIENTE] Pedir captura de Figma antes de diseñar el TC definitivo.",
+      alertas:["⚠️ PENDIENTE TOTAL — no ejecutar hasta obtener frame de Figma."],
+      status:"blocked", ambiente:"TEST", tester:"Carla Contreras", fecha:"2026-08-19", observaciones:"Pendiente frame Figma de Comunicaciones" },
+    { id:"TC-HOME-054", name:"Estado vacío de Comunicaciones [PENDIENTE]", tipo:"Edge", prioridad:"P2", seccion:"11 · Comunicaciones [INFERIDO]",
+      objetivo:"[PENDIENTE] Verificar el estado vacío de la tab 'Mis Comunicaciones'.",
+      pre:{ u:"Vecino sin comunicaciones.", e:"Tab 'Mis Comunicaciones' activa." },
+      pasos:["[PENDIENTE] Definir una vez recibida la captura de Figma."],
+      resultadoEsperado:"[PENDIENTE]",
+      alertas:["⚠️ PENDIENTE TOTAL — definir una vez recibida captura de Figma."],
+      status:"blocked", ambiente:"TEST", tester:"Carla Contreras", fecha:"2026-08-19", observaciones:"Pendiente frame Figma de Comunicaciones" },
+    { id:"TC-HOME-055", name:"Resumen de Infracciones con pendientes", tipo:"Happy path", prioridad:"P1", seccion:"12 · Infracciones",
+      objetivo:"Verificar el banner 'TU RESUMEN' en tab Infracciones con infracciones pendientes.",
+      pre:{ u:"Vecino con 2 infracciones pendientes de 3 (categoría Tránsito-Estacionamiento).", e:"Tab 'Mis Infracciones' activa." },
+      pasos:["Navegar al HOME.","Click en 'Mis Infracciones'.","Observar el banner 'TU RESUMEN' y la fila de categorías."],
+      resultadoEsperado:"Banner 'Tenés 2 infracciones pendientes' + dona '2/3' + fila de 4 categorías.",
+      alertas:["⚠️ Figma dice 'Tenés 2 infracción pendiente' — probable typo. Confirmar copy con PO."],
+      status:"blocked", ambiente:"TEST", tester:"Carla Contreras", fecha:"2026-08-19",
+      observaciones:"Bloqueado — no tenemos usuarios de prueba con infracciones cargadas." },
+    { id:"TC-HOME-056", name:"Filtrar por categoría muestra la infracción correcta", tipo:"Happy path", prioridad:"P1", seccion:"12 · Infracciones",
+      objetivo:"Verificar que al seleccionar una categoría se muestran solo las infracciones de esa categoría.",
+      pre:{ u:"Vecino con infracción en 'Tránsito-Estacionamiento'.", e:"Tab 'Mis Infracciones' activa." },
+      pasos:["Click en 'Tránsito-Estacionamiento' (resaltar en naranja).","Observar las tarjetas."],
+      resultadoEsperado:"Tarjeta 'Auto mal estacionado', $85.200, dirección, fecha, 'Pagar', 'Ver más'. Solo de esa categoría.",
+      status:"blocked", ambiente:"TEST", tester:"Carla Contreras", fecha:"2026-08-19",
+      observaciones:"Bloqueado — no tenemos usuarios de prueba con infracciones cargadas." },
+    { id:"TC-HOME-057", name:"Botón 'Pagar' de una infracción", tipo:"Happy path", prioridad:"P1", seccion:"12 · Infracciones",
+      objetivo:"Verificar que el botón 'Pagar' de una infracción abre el flujo de pago correcto.",
+      pre:{ u:"Vecino con infracción pendiente.", e:"TC-HOME-056 OK. Tarjeta de infracción visible." },
+      pasos:["Click en 'Pagar' de la tarjeta de infracción."],
+      resultadoEsperado:"Abre el flujo de pago de esa infracción específica (no pantalla genérica).",
+      status:"blocked", ambiente:"TEST", tester:"Carla Contreras", fecha:"2026-08-19",
+      observaciones:"Bloqueado — no tenemos usuarios de prueba con infracciones cargadas." },
+    { id:"TC-HOME-058", name:"Categoría sin infracciones asociadas (Edge)", tipo:"Edge", prioridad:"P2", seccion:"12 · Infracciones",
+      objetivo:"Verificar que cada categoría sin infracciones muestra su propio estado vacío.",
+      pre:{ u:"Vecino con infracciones solo en 'Tránsito-Estacionamiento', 0 en las otras 3.", e:"Tab 'Mis Infracciones' activa." },
+      pasos:["Click en 'Código de Convivencia'. Observar.","Click en 'Medio Ambiente'. Observar.","Click en 'Comercios'. Observar."],
+      resultadoEsperado:"Cada categoría sin infracciones muestra su propio estado vacío. No mezcla ni pantalla en blanco.",
+      status:"blocked", ambiente:"TEST", tester:"Carla Contreras", fecha:"2026-08-19",
+      observaciones:"Bloqueado — no tenemos usuarios de prueba con infracciones cargadas." },
+    { id:"TC-HOME-059", name:"Estado vacío total ('Felicitaciones, no tenés infracciones')", tipo:"Edge", prioridad:"P1", seccion:"12 · Infracciones",
+      objetivo:"Verificar el estado vacío total de Infracciones cuando el vecino no tiene ninguna.",
+      pre:{ u:"Vecino sin ninguna infracción en ninguna categoría.", e:"Tab 'Mis Infracciones' activa." },
+      pasos:["Navegar al HOME.","Click en 'Mis Infracciones'.","Observar el banner."],
+      resultadoEsperado:"Banner verde 'Felicitaciones, no tenés infracciones' con dona total sin pendientes. Las 4 categorías siguen visibles.",
+      status:"blocked", ambiente:"TEST", tester:"Carla Contreras", fecha:"2026-08-19",
+      observaciones:"Bloqueado — no tenemos usuarios de prueba con infracciones cargadas." },
+    { id:"TC-HOME-060", name:"Color de highlight de la tab 'Mis Infracciones' (Edge visual)", tipo:"Edge", prioridad:"P3", seccion:"12 · Infracciones",
+      objetivo:"Verificar si el color naranja de la tab activa 'Mis Infracciones' es intencional o bug de Figma.",
+      pre:{ u:"Usuario logueado.", e:"HOME cargado." },
+      pasos:["Activar 'Mis Contribuciones'. Registrar color de tab activa (azul marino).","Activar 'Mis Infracciones'. Registrar color.","Comparar."],
+      resultadoEsperado:"[A CONFIRMAR] Si el color naranja es intencional o inconsistencia de Figma.",
+      alertas:["⚠️ No reportar como bug sin confirmar intención con diseño primero."],
+      status:"blocked", ambiente:"TEST", tester:"Carla Contreras", fecha:"2026-08-19",
+      observaciones:"Bloqueado — no tenemos usuarios de prueba con infracciones cargadas." },
+    { id:"TC-HOME-061", name:"Placeholder: relevar Trámites y Juicios antes de testear", tipo:"N/A", prioridad:"P1", seccion:"13 · Trámites / Juicios [PENDIENTE]",
+      objetivo:"Acción previa requerida: obtener frames de Figma de 'Mis Trámites' y 'Mis Juicios' antes de diseñar y ejecutar TCs definitivos.",
+      pre:{ u:"N/A", e:"N/A — requiere acción de diseño." },
+      pasos:["Pedir a Mati/diseño el link de Figma con frames 'Mis Trámites' y 'Mis Juicios'.","Confirmar si 'Mis Trámites' tiene contenido real (en v1 estaba atenuada).","Diseñar TCs definitivos.","Ejecutar."],
+      resultadoEsperado:"Frames obtenidos. TCs diseñados y ejecutados.",
+      alertas:["⚠️ PENDIENTE TOTAL — no ejecutar hasta obtener frames de Figma."],
+      status:"blocked", ambiente:"TEST", tester:"Carla Contreras", fecha:"2026-08-19", observaciones:"Pendiente frames Figma de Trámites y Juicios" },
+    { id:"TC-HOME-062", name:"Footer presente con todos sus elementos", tipo:"Happy path", prioridad:"P3", seccion:"14 · Footer",
+      objetivo:"Verificar que el footer del HOME contiene todos sus elementos.",
+      pre:{ u:"Usuario logueado. (usuario real: 220288219487)", e:"HOME cargado. Scroll hasta el footer." },
+      pasos:["Scrollear hasta el footer.","Verificar: Logo Córdoba + 'Municipalidad de Córdoba', 'Seguinos en' + 6 íconos de redes, dirección, teléfono '0800-888-0404', franja de color inferior."],
+      resultadoEsperado:"Footer contiene todos los elementos mencionados.",
+      status:"ok", ambiente:"TEST", tester:"Carla Contreras", fecha:"2026-08-19",
+      observaciones:"Footer presente con todos sus elementos." },
+    { id:"TC-HOME-063", name:"Cada ícono de red social abre el enlace correcto", tipo:"Happy path", prioridad:"P3", seccion:"14 · Footer",
+      objetivo:"Verificar que los 6 íconos de redes sociales del footer abren los enlaces correctos.",
+      pre:{ u:"Usuario logueado.", e:"Footer visible." },
+      pasos:["Instagram → perfil oficial.","Facebook → perfil oficial.","X (Twitter) → perfil oficial.","YouTube → canal oficial.","WhatsApp → contacto oficial.","TikTok → perfil oficial."],
+      resultadoEsperado:"Cada ícono abre el enlace correcto de la red social oficial de la Municipalidad." },
+    { id:"TC-HOME-064", name:"Footer visible y no superpuesto en breakpoints chicos (Edge)", tipo:"Edge", prioridad:"P2", seccion:"14 · Footer",
+      objetivo:"Verificar que el footer es responsive y no tiene superposición en breakpoints pequeños.",
+      pre:{ u:"Usuario logueado. (usuario real: 220288219487)", e:"Viewport en 360px, 768px y 1024px." },
+      pasos:["Con viewport en 360px: scrollear al footer. Verificar sin superposición.","Repetir con 768px y 1024px."],
+      resultadoEsperado:"Los elementos se apilan verticalmente sin superponerse ni cortarse en los 3 breakpoints.",
+      status:"ok", ambiente:"TEST", tester:"Carla Contreras", fecha:"2026-08-19" },
+    { id:"TC-HOME-065", name:"Abrir el asistente Docta MIA", tipo:"Happy path", prioridad:"P1", seccion:"15 · Docta MIA flotante",
+      objetivo:"Verificar que el botón flotante de Docta MIA abre el asistente sin quedar oculto.",
+      pre:{ u:"Usuario logueado. (usuario real: 220288219487)", e:"HOME cargado." },
+      pasos:["Click en el botón flotante de Docta MIA."],
+      resultadoEsperado:"Abre el asistente virtual. No queda oculto detrás de otros elementos ni del footer.",
+      status:"ok", ambiente:"TEST", tester:"Carla Contreras", fecha:"2026-08-19" },
+    { id:"TC-HOME-066", name:"Botón flotante visible sobre el footer (Edge)", tipo:"Edge", prioridad:"P2", seccion:"15 · Docta MIA flotante",
+      objetivo:"Verificar que el botón flotante permanece visible y clickeable sobre el footer.",
+      pre:{ u:"Usuario logueado. (usuario real: 220288219487)", e:"HOME cargado." },
+      pasos:["Scrollear hasta el footer.","Observar si el botón flotante de Docta MIA sigue visible y clickeable."],
+      resultadoEsperado:"El botón flotante permanece por encima del footer (z-index correcto) y es clickeable.",
+      status:"ok", ambiente:"TEST", tester:"Carla Contreras", fecha:"2026-08-19" },
+    { id:"TC-HOME-067", name:"Volver atrás desde un módulo hijo", tipo:"Edge", prioridad:"P1", seccion:"16 · Navegación general",
+      objetivo:"Verificar que volver atrás desde un módulo hijo regresa al HOME en el mismo estado.",
+      pre:{ u:"Usuario logueado. (usuario real: 220288219487)", e:"Usuario navega desde HOME a un módulo hijo." },
+      pasos:["Desde HOME, navegar a cualquier módulo hijo.","Usar el botón 'Atrás' del navegador.","Observar el estado del HOME al volver."],
+      resultadoEsperado:"Vuelve al HOME con la misma tab activa que tenía antes de navegar.",
+      status:"ok", ambiente:"TEST", tester:"Carla Contreras", fecha:"2026-08-19" },
+    { id:"TC-HOME-068", name:"Recargar con el modal 'Descubrí más' abierto (Edge)", tipo:"Edge", prioridad:"P2", seccion:"16 · Navegación general",
+      objetivo:"Verificar que recargar la página con el modal abierto no genera un estado roto.",
+      pre:{ u:"Usuario logueado. (usuario real: 220288219487)", e:"Modal 'Descubrí más' abierto." },
+      pasos:["Con el modal abierto, presionar F5.","Observar el estado de la página al recargar."],
+      resultadoEsperado:"No queda en estado roto (modal fantasma, overlay sin contenido). Recarga limpia.",
+      status:"ok", ambiente:"TEST", tester:"Carla Contreras", fecha:"2026-08-19" },
+    { id:"TC-HOME-069", name:"Recargar con el sidebar expandido (Edge)", tipo:"Edge", prioridad:"P3", seccion:"16 · Navegación general",
+      objetivo:"Verificar el comportamiento del sidebar al recargar con él expandido.",
+      pre:{ u:"Usuario logueado. (usuario real: 220288219487)", e:"Sidebar expandido." },
+      pasos:["Con el sidebar expandido, presionar F5.","Observar el estado del sidebar al recargar."],
+      resultadoEsperado:"A definir con PO: ¿debe recordar el estado expandido o volver al colapsado?",
+      alertas:["⚠️ Comportamiento esperado a definir con PO."],
+      status:"ok", ambiente:"TEST", tester:"Carla Contreras", fecha:"2026-08-19",
+      observaciones:"Al día de la fecha, al recargar con el sidebar expandido, se contrae (vuelve a colapsado)." },
+    { id:"TC-HOME-070", name:"Recargar durante una acción en curso (Edge)", tipo:"Edge", prioridad:"P3", seccion:"16 · Navegación general",
+      objetivo:"Verificar que recargar durante el flujo de pago no deja al usuario en estado intermedio.",
+      pre:{ u:"Vecino con contribuciones vencidas.", e:"Flujo de pago iniciado (TC-HOME-031)." },
+      pasos:["Iniciar 'Pagar ahora' (TC-HOME-031).","Antes de confirmar el pago, presionar F5.","Observar el estado de la página al recargar."],
+      resultadoEsperado:"No queda en estado de pago intermedio ambiguo. El sistema maneja la recarga correctamente." },
+  ];
+
+  static STATUS = {
+    pendiente:{ label:"Pendiente", col:"#8A94A2", bg:"#EEF1F4", fill:"#C3CBD4" },
+    ok:{ label:"OK", col:"#157F4A", bg:"#E8F5EE", fill:"#22A05F" },
+    nok:{ label:"NO OK", col:"#A5311F", bg:"#FBECEA", fill:"#D0402A" },
+    blocked:{ label:"Blocked", col:"#8A5A00", bg:"#FDF3E3", fill:"#D69200" },
+    descartado:{ label:"Descartado", col:"#5A6675", bg:"#EEF1F4", fill:"#8A94A2" },
+  };
+  static TIPO = {
+    "Happy path":{ col:"#1A56A8", bg:"#E8F0FB" },
+    "Negativo":{ col:"#A5311F", bg:"#FBECEA" },
+    "Edge":{ col:"#5B3FA8", bg:"#EFEBFA" },
+    "N/A":{ col:"#8A94A2", bg:"#EEF1F4" },
+  };
+  static PRIO = { P1:"#A5311F", P2:"#8A5A00", P3:"#8A94A2" };
+  static KEY = "qa-muni-home-v2.2-r13";
+
+  state = {
+    tcs: Component.RAW.map(t => ({ ...t, alertas: t.alertas || [], ambiente: t.ambiente || "", status: t.status || "pendiente", tester: t.tester || "", fecha: t.fecha || "", observaciones: t.observaciones || "", evidencia: t.evidencia || "" })),
+    view: "grid", idx: 0, fSec: "all", fStat: "all", fPrio: "all", copied: false,
+  };
+
+  componentDidMount() {
+    try {
+      const raw = localStorage.getItem(Component.KEY);
+      if (raw) {
+        const saved = JSON.parse(raw);
+        this.setState(s => ({ tcs: s.tcs.map(t => {
+          const sv = saved[t.id];
+          if (!sv) return t;
+          const clean = {};
+          Object.keys(sv).forEach(k => { if (sv[k] !== "" && sv[k] != null) clean[k] = sv[k]; });
+          return { ...t, ...clean };
+        }) }));
+      }
+    } catch (e) {}
+    this._key = (e) => {
+      if (this.state.view !== "slide") return;
+      const tag = (e.target && e.target.tagName) || "";
+      if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return;
+      if (e.key === "ArrowRight") this.step(1);
+      else if (e.key === "ArrowLeft") this.step(-1);
+      else if (e.key === "Escape") this.setState({ view: "grid" });
+    };
+    window.addEventListener("keydown", this._key);
+  }
+  componentWillUnmount() { window.removeEventListener("keydown", this._key); }
+
+  persist(tcs) {
+    try {
+      const obj = {};
+      tcs.forEach(t => { obj[t.id] = { status:t.status, tester:t.tester, fecha:t.fecha, observaciones:t.observaciones, evidencia:t.evidencia }; });
+      localStorage.setItem(Component.KEY, JSON.stringify(obj));
+    } catch (e) {}
+  }
+
+  update(id, patch) {
+    this.setState(s => {
+      const tcs = s.tcs.map(t => t.id === id ? { ...t, ...patch } : t);
+      this.persist(tcs);
+      return { tcs };
+    });
+  }
+
+  filtered() {
+    const s = this.state;
+    return s.tcs.filter(t =>
+      (s.fSec === "all" || t.seccion === s.fSec) &&
+      (s.fStat === "all" || t.status === s.fStat) &&
+      (s.fPrio === "all" || t.prioridad === s.fPrio));
+  }
+
+  step(d) {
+    const f = this.filtered();
+    const cur = this.state.tcs[this.state.idx];
+    let i = f.findIndex(t => t.id === (cur && cur.id));
+    if (i < 0) i = 0;
+    const nx = f[i + d];
+    if (!nx) return;
+    this.setState({ idx: this.state.tcs.findIndex(t => t.id === nx.id) });
+  }
+
+  groupKey(t) {
+    const by = this.props.groupBy || "Sección";
+    if (by === "Prioridad") return t.prioridad === "P1" ? "P1 · Crítico" : t.prioridad === "P2" ? "P2 · Importante" : "P3 · Edge / Visual";
+    if (by === "Estado") return Component.STATUS[t.status].label;
+    return t.seccion;
+  }
+
+  badge(col, bg) { return { fontSize:10, padding:"2px 8px", borderRadius:99, background:bg, color:col, fontWeight:500, whiteSpace:"nowrap" }; }
+
+  copyTable = () => {
+    const rows = this.state.tcs.map(t => `| ${t.id} | ${t.name} | ${t.status} | ${t.tester} | ${t.fecha} | ${t.evidencia} | ${t.observaciones} |`);
+    const md = ["| ID | Nombre | Estado | Tester | Fecha | Evidencia | Observaciones |", "|----|--------|--------|--------|-------|-----------|---------------|"].concat(rows).join("\n");
+    const done = () => { this.setState({ copied:true }); setTimeout(() => this.setState({ copied:false }), 1800); };
+    try { navigator.clipboard.writeText(md).then(done, done); } catch (e) { done(); }
+  };
+
+  downloadPdf = () => {
+    const esc = (s) => String(s == null ? "" : s)
+      .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+    const ST = Component.STATUS;
+    const S = this.state;
+    const counts = { total:S.tcs.length, ok:0, nok:0, blocked:0, pendiente:0 };
+    S.tcs.forEach(t => { counts[t.status]++; });
+
+    const bySeccion = new Map();
+    S.tcs.forEach(t => { if (!bySeccion.has(t.seccion)) bySeccion.set(t.seccion, []); bySeccion.get(t.seccion).push(t); });
+
+    const sectionsHtml = [...bySeccion.entries()].map(([sec, items]) => `
+      <h2>${esc(sec)}</h2>
+      ${items.map(t => `
+        <div class="tc">
+          <div class="tc-head">
+            <span class="tc-id">${esc(t.id)}</span>
+            <span class="badge st-${esc(t.status)}">${esc(ST[t.status].label)}</span>
+            <span class="badge">${esc(t.tipo)}</span>
+            <span class="badge">${esc(t.prioridad)}</span>
+          </div>
+          <div class="tc-name">${esc(t.name)}</div>
+          <div class="tc-row"><b>Objetivo:</b> ${esc(t.objetivo)}</div>
+          <div class="tc-row"><b>Precondición — Usuario:</b> ${esc(t.pre.u)}</div>
+          <div class="tc-row"><b>Precondición — Estado previo:</b> ${esc(t.pre.e)}</div>
+          <div class="tc-row"><b>Pasos:</b><ol>${(t.pasos || []).map(p => `<li>${esc(p)}</li>`).join("")}</ol></div>
+          <div class="tc-row"><b>Resultado esperado:</b> ${esc(t.resultadoEsperado)}</div>
+          ${(t.alertas && t.alertas.length) ? `<div class="tc-alert">${t.alertas.map(a => esc(a)).join("<br>")}</div>` : ""}
+          <div class="tc-exec">
+            <b>Ejecución:</b> Ambiente: ${esc(t.ambiente || "—")} · Tester: ${esc(t.tester || "—")} · Fecha: ${esc(t.fecha || "—")}${t.evidencia ? ` · Evidencia: ${esc(t.evidencia)}` : ""}
+            ${t.observaciones ? `<div class="tc-obs"><b>Observaciones:</b> ${esc(t.observaciones)}</div>` : ""}
+          </div>
+        </div>
+      `).join("")}
+    `).join("");
+
+    const html = `<!DOCTYPE html><html><head><meta charset="utf-8">
+      <title>Informe QA — HOME (Web) · Mi DOCTA</title>
+      <style>
+        body { font-family:Helvetica Neue, Helvetica, Arial, sans-serif; color:#1B2430; padding:32px; }
+        h1 { font-size:20px; margin:0 0 4px; }
+        h2 { font-size:14px; text-transform:uppercase; letter-spacing:0.05em; color:#5A6675; border-bottom:1px solid #E2E6EB; padding-bottom:6px; margin:28px 0 12px; }
+        .meta { font-size:12px; color:#5A6675; margin-bottom:6px; }
+        .summary { font-size:13px; margin:14px 0 6px; padding:10px 14px; background:#F4F6F8; border-radius:8px; }
+        .tc { border:1px solid #E2E6EB; border-radius:8px; padding:12px 16px; margin-bottom:12px; page-break-inside:avoid; }
+        .tc-head { display:flex; gap:6px; align-items:center; margin-bottom:6px; flex-wrap:wrap; }
+        .tc-id { font-family:ui-monospace, Menlo, monospace; font-size:11px; color:#8A94A2; }
+        .badge { font-size:10px; padding:2px 8px; border-radius:99px; background:#EEF1F4; color:#5A6675; font-weight:500; }
+        .st-ok { background:#E8F5EE; color:#157F4A; }
+        .st-nok { background:#FBECEA; color:#A5311F; }
+        .st-blocked { background:#FDF3E3; color:#8A5A00; }
+        .st-pendiente { background:#EEF1F4; color:#8A94A2; }
+        .tc-name { font-size:14px; font-weight:600; margin-bottom:8px; }
+        .tc-row { font-size:12px; line-height:1.6; margin-bottom:4px; }
+        .tc-row ol { margin:4px 0 0; padding-left:18px; }
+        .tc-alert { font-size:11px; color:#8A5A00; background:#FDF3E3; border-radius:6px; padding:6px 10px; margin:6px 0; }
+        .tc-exec { font-size:12px; margin-top:8px; padding-top:8px; border-top:1px solid #E2E6EB; }
+        .tc-obs { margin-top:4px; }
+        @media print { .tc { page-break-inside:avoid; } }
+      </style>
+      </head><body>
+      <h1>Informe QA — HOME (Web) · Mi DOCTA</h1>
+      <div class="meta">Municipalidad de Córdoba · v2.2 · Generado: ${esc(new Date().toLocaleString("es-AR"))}</div>
+      <div class="summary">Total: ${counts.total} · OK: ${counts.ok} · NO OK: ${counts.nok} · Blocked: ${counts.blocked} · Pendiente: ${counts.pendiente}</div>
+      ${sectionsHtml}
+      </body></html>`;
+
+    const w = window.open("", "_blank");
+    if (!w) { alert("El navegador bloqueó la ventana emergente. Habilitá pop-ups para descargar el PDF."); return; }
+    w.document.open();
+    w.document.write(html);
+    w.document.close();
+    const trigger = () => { try { w.focus(); w.print(); } catch (e) {} };
+    if (w.document.readyState === "complete") trigger();
+    else w.onload = trigger;
+  };
+
+  renderVals() {
+    const S = this.state, ST = Component.STATUS, TP = Component.TIPO, PR = Component.PRIO;
+    const f = this.filtered();
+    const counts = { total:S.tcs.length, ok:0, nok:0, blocked:0, pendiente:0 };
+    S.tcs.forEach(t => { counts[t.status]++; });
+    const done = counts.ok + counts.nok + counts.blocked;
+    const pct = counts.total ? Math.round(done / counts.total * 100) : 0;
+    const okPct = counts.total ? Math.round(counts.ok / counts.total * 100) : 0;
+
+    const order = [];
+    const map = new Map();
+    f.forEach(t => {
+      const k = this.groupKey(t);
+      if (!map.has(k)) { map.set(k, []); order.push(k); }
+      map.get(k).push(t);
+    });
+    const groups = order.map(k => ({
+      sec: k,
+      count: map.get(k).length + (map.get(k).length === 1 ? " caso" : " casos"),
+      items: map.get(k).map(t => {
+        const s = ST[t.status], tp = TP[t.tipo] || TP["N/A"];
+        return {
+          id: t.id, name: t.name, tipo: t.tipo, prioridad: t.prioridad, statusLabel: s.label,
+          barStyle: { height:3, borderRadius:99, background:s.fill, width: t.status === "pendiente" ? "28%" : "100%" },
+          tipoStyle: this.badge(tp.col, tp.bg),
+          prioStyle: { fontSize:10, fontWeight:600, color:PR[t.prioridad] || PR.P3, letterSpacing:"0.03em" },
+          statStyle: Object.assign(this.badge(s.col, s.bg), { marginLeft:"auto" }),
+          open: () => this.setState({ view:"slide", idx: S.tcs.findIndex(x => x.id === t.id) }),
+        };
+      }),
+    }));
+
+    const t = S.tcs[S.idx] || S.tcs[0];
+    const s = ST[t.status], tp = TP[t.tipo] || TP["N/A"];
+    const heroTone = { ok:["rgba(74,222,128,0.2)","#4ade80"], nok:["rgba(248,113,113,0.2)","#f87171"], blocked:["rgba(251,191,36,0.2)","#fbbf24"], pendiente:["rgba(255,255,255,0.1)","rgba(255,255,255,0.6)"], descartado:["rgba(148,163,184,0.2)","#94a3b8"] }[t.status];
+    const fi = f.findIndex(x => x.id === t.id);
+    const navBtn = (on) => ({ padding:"7px 11px", borderRadius:6, border:"1px solid #D7DDE5", background:"#fff", color:"#1B2430", cursor: on ? "pointer" : "default", opacity: on ? 1 : 0.35 });
+
+    return {
+      headerTitle: this.props.headerTitle ?? "QA — HOME (Web) · Mi DOCTA",
+      headerSubtitle: (this.props.headerSubtitle ?? "Municipalidad de Córdoba · v2.2 · Vista Vecino") + " · " + f.length + " de " + counts.total + " TC",
+      isGrid: S.view === "grid", isSlide: S.view === "slide",
+      statCells: [
+        { l:"Total", v:counts.total, numStyle:{ fontSize:22, fontWeight:500, lineHeight:1, color:"rgba(255,255,255,0.9)" } },
+        { l:"Pend.", v:counts.pendiente, numStyle:{ fontSize:22, fontWeight:500, lineHeight:1, color:"rgba(255,255,255,0.5)" } },
+        { l:"OK", v:counts.ok, numStyle:{ fontSize:22, fontWeight:500, lineHeight:1, color:"#4ade80" } },
+        { l:"No OK", v:counts.nok, numStyle:{ fontSize:22, fontWeight:500, lineHeight:1, color:"#f87171" } },
+        { l:"Blocked", v:counts.blocked, numStyle:{ fontSize:22, fontWeight:500, lineHeight:1, color:"#fbbf24" } },
+      ],
+      progressStyle: { height:"100%", width: pct + "%", background: counts.nok > 0 ? "#f87171" : "#4ade80", borderRadius:99, transition:"width .4s" },
+      pctLabel: pct + "%", okPctLabel: okPct + "% OK",
+      sections: [...new Set(Component.RAW.map(x => x.seccion))],
+      fSec: S.fSec, fStat: S.fStat, fPrio: S.fPrio,
+      onFSec: e => this.setState({ fSec:e.target.value }),
+      onFStat: e => this.setState({ fStat:e.target.value }),
+      onFPrio: e => this.setState({ fPrio:e.target.value }),
+      hasFilters: S.fSec !== "all" || S.fStat !== "all" || S.fPrio !== "all",
+      clearFilters: () => this.setState({ fSec:"all", fStat:"all", fPrio:"all" }),
+      copyTable: this.copyTable,
+      downloadPdf: this.downloadPdf,
+      copyLabel: S.copied ? "Tabla copiada ✓" : "Copiar tabla de estado",
+      groups, isEmpty: f.length === 0,
+      cur: {
+        id: t.id, name: t.name, tipo: t.tipo, prioridad: t.prioridad, seccion: t.seccion,
+        objetivo: t.objetivo, preU: t.pre.u, preE: t.pre.e, pasos: t.pasos,
+        resultadoEsperado: t.resultadoEsperado, alertas: t.alertas,
+        statusLabel: s.label, isNok: t.status === "nok",
+        tester: t.tester, fecha: t.fecha, observaciones: t.observaciones, evidencia: t.evidencia,
+        ambiente: t.ambiente || "completar al iniciar sesión",
+        ambienteStyle: t.ambiente ? { fontStyle:"normal", fontWeight:600, color:"#1B2430", fontFamily:"ui-monospace, Menlo, monospace" } : { fontStyle:"italic" },
+        hasEvidenciaImg: !!t.evidenciaSrc,
+        evidenciaMedia: !t.evidenciaSrc ? null : React.createElement("div",
+          { style:{ display:"grid", gridTemplateColumns:"repeat(auto-fit, minmax(120px, 1fr))", gap:6 } },
+          [].concat(t.evidenciaSrc).map((src, i) => /\.mp4$/i.test(src)
+            ? React.createElement("video", { key:i, src, controls:true, preload:"metadata",
+                style:{ display:"block", width:"100%", height:140, border:"1px solid #D7DDE5", borderRadius:6, background:"#000" } })
+            : React.createElement("a", { key:i, href:src, target:"_blank",
+                style:{ display:"block", border:"1px solid #D7DDE5", borderRadius:6, overflow:"hidden" } },
+                React.createElement("img", { src, alt:"Evidencia " + t.id,
+                  style:{ display:"block", width:"100%", height:96, objectFit:"cover", objectPosition:"top left" } })))),
+        heroStatStyle: { fontSize:12, padding:"3px 11px", borderRadius:99, fontWeight:500, background:heroTone[0], color:heroTone[1] },
+        tipoStyle: { fontSize:11, padding:"3px 11px", borderRadius:99, background:tp.bg, color:tp.col, fontWeight:500 },
+      },
+      statusButtons: Object.keys(ST).map(k => ({
+        label: ST[k].label,
+        set: () => this.update(t.id, { status:k }),
+        style: { padding:"7px 14px", borderRadius:6, fontSize:12, fontWeight:500, cursor:"pointer",
+          border: t.status === k ? "2px solid " + ST[k].col : "1px solid #D7DDE5",
+          color: t.status === k ? ST[k].col : "#5A6675",
+          background: t.status === k ? ST[k].bg : "#fff" },
+      })),
+      onTester: e => this.update(t.id, { tester:e.target.value }),
+      onFecha: e => this.update(t.id, { fecha:e.target.value }),
+      onObs: e => this.update(t.id, { observaciones:e.target.value }),
+      onEvidencia: e => this.update(t.id, { evidencia:e.target.value }),
+      counter: (fi >= 0 ? fi + 1 : 1) + " / " + (f.length || 1),
+      onPrev: () => this.step(-1), onNext: () => this.step(1),
+      prevStyle: navBtn(fi > 0), nextStyle: navBtn(fi >= 0 && fi < f.length - 1),
+      toGrid: () => this.setState({ view:"grid" }),
+    };
+  }
+}
+</script>
+</body>
+</html>
