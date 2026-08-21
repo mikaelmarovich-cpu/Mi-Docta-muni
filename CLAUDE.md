@@ -1,36 +1,44 @@
-# CLAUDE.md — QA Ejecución · HOME (Web) · Mi DOCTA
-**Proyecto:** Municipalidad de Córdoba · Plataforma Mi DOCTA · Módulo HOME (Web)
-**Versión del documento:** v2.2
+# CLAUDE.md — QA Ejecución · Mi DOCTA (multi-módulo)
+**Proyecto:** Municipalidad de Córdoba · Plataforma Mi DOCTA
+**Módulos activos:** HOME (Web) · Autenticación e Ingreso (Web) · Contribuciones Municipales (Web)
+**Versión del documento:** v3.0 (multi-módulo)
 
 ---
 
 ## ROL
 
-Sos el asistente QA del proyecto Mi DOCTA. Tu trabajo es guiar la ejecución de los 70 casos de prueba del módulo HOME, registrar los resultados en el archivo del proyecto, y mantener el estado de ejecución siempre actualizado.
+Sos el asistente QA del proyecto Mi DOCTA. Tu trabajo es guiar la ejecución de los casos de prueba de **cualquiera de los módulos** del tablero (HOME, Autenticación e Ingreso, Contribuciones Municipales, y los que se agreguen a futuro), registrar los resultados en el archivo del proyecto, y mantener el estado de ejecución siempre actualizado. Al arrancar una sesión o cuando no quede claro, preguntar con qué módulo se va a trabajar.
 
 ---
 
 ## SOBRE ESTE PROYECTO (importante antes de tocar nada)
 
-Este es un **bundle exportado de Claude Design** (claude.ai/design), no un proyecto React/JSX tradicional. La fuente de verdad es un único archivo:
+Este es un **bundle exportado de Claude Design** (claude.ai/design), no un proyecto React/JSX tradicional. La fuente de verdad es un único archivo, que contiene **los tres módulos** en un solo tablero con selector:
 
 ```
 qa-home-mi-docta-municipalidad-de-c-rdoba-versi-n-del-docume/
 ├── README.md                         ← nota de handoff de Claude Design (informativa)
 └── project/
-    ├── QA HOME Mi DOCTA.dc.html      ← ÚNICA fuente de verdad. Acá está el array RAW con los 70 TCs.
+    ├── QA HOME Mi DOCTA.dc.html      ← ÚNICA fuente de verdad. Acá están los 3 arrays RAW_* con los TCs de cada módulo.
     ├── support.js                    ← motor de render del componente. NO TOCAR NUNCA.
-    ├── evidencia/                    ← capturas/videos ya nombrados y asociados a un TC.
+    ├── evidencia/                    ← capturas/videos ya nombrados y asociados a un TC (de cualquier módulo).
     └── uploads/                      ← adjuntos sueltos que el tester pega en el chat, sin clasificar todavía.
 ```
 
 Puntos clave que cambian el workflow respecto a un proyecto "normal":
 
-- **No hay `qa-presentation.jsx` ni `prompt_claude_design_qa_home.md`.** Todo vive en un solo array `static RAW = [...]` dentro de `QA HOME Mi DOCTA.dc.html`. No hay una segunda tabla que mantener sincronizada.
-- El archivo `.dc.html` también es una **app interactiva**: si el tester lo abre en un navegador, puede tocar los botones de estado y tipear tester/fecha/observaciones/evidencia directamente en la UI, y eso se guarda en `localStorage` del navegador (clave `qa-muni-home-v2.2-r13`). Esa persistencia de navegador es *efímera y local a esa máquina/perfil* — el estado que cuenta y el que ve cualquier otra persona es el que está escrito en el array `RAW` del archivo. Si el tester ejecuta desde la UI del navegador, para que el cambio quede versionado hay que igualmente reflejarlo en `RAW` (o pedirle que use "Copiar tabla de estado" y pasarte el resultado).
+- **No hay `qa-presentation.jsx` ni `prompt_claude_design_qa_home.md`.** Todo vive en el mismo `QA HOME Mi DOCTA.dc.html` (a pesar del nombre del archivo, ya no es solo HOME — es el tablero de los 3 módulos). No hay una segunda tabla que mantener sincronizada.
+- **Arquitectura multi-módulo (dentro de un único archivo, un único `Component`):**
+  - `static RAW_HOME`, `static RAW_AUTH`, `static RAW_CONTRIB` — un array por módulo, mismo formato de TC que antes (`id, name, tipo, prioridad, seccion, objetivo, pre, pasos, resultadoEsperado, alertas, ambiente, status, tester, fecha, evidencia, evidenciaSrc, observaciones`).
+  - `static MODULES = { "home": {...}, "autenticacion-ingreso": {...}, "contribuciones-municipales": {...} }` — mapea cada módulo a su `raw`, su `key` de `localStorage` propia, y el título/subtítulo de header que se muestra.
+  - Un `<select>` en el header (`fModulo` / `onModulo`) permite cambiar de módulo **sin recargar la página** — el componente cambia `state.modulo` y recalcula `state.tcs` a partir del `raw` correspondiente.
+  - **Convención de IDs por módulo:** `TC-HOME-XXX`, `TC-AUTH-XXX`, `TC-CONTRIB-XXX`. Todos comparten la misma carpeta `evidencia/`, no hay subcarpetas por módulo — el prefijo del ID ya evita colisiones de nombre.
+  - **Al agregar un módulo nuevo:** crear su `static RAW_<MODULO> = [...]`, agregar una entrada a `static MODULES` con una `key` de localStorage única (que no choque con las otras), y sumar una `<option>` en el `<select>` de módulos del template. No hace falta tocar `support.js` ni crear un archivo nuevo.
+- El archivo `.dc.html` también es una **app interactiva**: si el tester lo abre en un navegador, puede tocar los botones de estado y tipear tester/fecha/observaciones/evidencia directamente en la UI, y eso se guarda en `localStorage` del navegador (clave **distinta por módulo**: `qa-muni-home-v2.2-r13`, `qa-muni-auth-v1.0-r1`, `qa-muni-contrib-v1.1-r1`). Esa persistencia de navegador es *efímera y local a esa máquina/perfil* — el estado que cuenta y el que ve cualquier otra persona es el que está escrito en los arrays `RAW_*` del archivo. Si el tester ejecuta desde la UI del navegador, para que el cambio quede versionado hay que igualmente reflejarlo en el `RAW_*` correspondiente (o pedirle que use "Copiar tabla de estado" y pasarte el resultado). Si algo se ve "pendiente" en el navegador pese a estar actualizado en el archivo, sospechar primero de un `localStorage` viejo con datos de una sesión anterior — indicarle al tester que borre esa clave (DevTools → Application → Local Storage) y recargue.
 - **`support.js` es el runtime del componente** (parser de templates, manejo de estado, etc.). Nunca se edita para registrar resultados de un TC.
 - La carpeta de evidencia se llama **`evidencia/`** (singular), no `evidencias/`.
 - `QA-TESTING-GUIDE.md` y `ENGRAM.md` se mencionan dentro de la UI (plantilla de bug, regla RN-009 de Modo Persona Mayor) pero **no están incluidos en este bundle**. Si necesitás consultarlos, pedíselos al tester/PO — no los inventes.
+- **Repositorio remoto:** el proyecto se publica en `https://github.com/mikaelmarovich-cpu/Mi-Docta-muni` (público), con GitHub Pages activado para verlo online. Cada cambio relevante al `.dc.html` conviene comitearlo y pushearlo para que el link público quede al día.
 
 ---
 
@@ -44,36 +52,46 @@ Leer y entender:
 
 | Archivo | Qué contiene |
 |---------|-------------|
-| `project/QA HOME Mi DOCTA.dc.html` | Array `RAW` con los 70 TCs. **Acá se editan los resultados.** |
-| `project/evidencia/` | Capturas/videos ya asociados a un TC (convención de nombres abajo). |
+| `project/QA HOME Mi DOCTA.dc.html` | `static RAW_HOME`, `static RAW_AUTH`, `static RAW_CONTRIB` — un array por módulo. **Acá se editan los resultados.** |
+| `project/evidencia/` | Capturas/videos ya asociados a un TC de cualquier módulo (convención de nombres abajo). |
 | `project/uploads/` | Adjuntos sueltos pasados por el tester en el chat, sin clasificar aún — puede haber evidencia pendiente de mover/renombrar a `evidencia/`. |
 | `README.md` (del bundle) | Nota de handoff de Claude Design, solo contexto. |
 
-### 2. Mostrar resumen del estado actual
-
-Leer el array `RAW` de `QA HOME Mi DOCTA.dc.html` y mostrar:
+### 2. Preguntar con qué módulo se va a trabajar
 
 ```
-📋 ESTADO DE EJECUCIÓN — HOME (Web) · Mi DOCTA v2.2
+¿Con qué módulo trabajamos hoy?
+  1. HOME (Web)
+  2. Autenticación e Ingreso (Web)
+  3. Contribuciones Municipales (Web)
+```
+
+### 3. Mostrar resumen del estado actual del módulo elegido
+
+Leer el `RAW_<MODULO>` correspondiente y mostrar:
+
+```
+📋 ESTADO DE EJECUCIÓN — <Nombre del módulo> · Mi DOCTA
 ──────────────────────────────────────────────────
-Total TCs:   70
+Total TCs:   X
 ✅ OK:        X
 ❌ NO OK:     X
 🔒 Blocked:   X
+⚫ Descartado: X
 ⚪ Pendiente: X
 
 Progreso: X% completado
 ──────────────────────────────────────────────────
 Próximos P1 pendientes:
-  · TC-HOME-XXX · <nombre>
+  · TC-<PREFIJO>-XXX · <nombre>
   · ...
 ```
 
-### 3. Preguntar con qué TC empezar
+### 4. Preguntar con qué TC empezar
 
 ```
 ¿Con qué TC empezamos?
-(Podés decirme el ID, el número, o el nombre. Ej: "013", "TC-HOME-013", "el de la grilla DOCTA MIA".)
+(Podés decirme el ID, el número, o el nombre.)
 ```
 
 ---
@@ -252,7 +270,10 @@ Cuando hay más de un archivo, `evidencia` es un string separado por comas (para
 | OK / Pasó / Pasa / ✅ / correcto / bien | `"ok"` |
 | NO OK / Falla / Falló / ❌ / mal / no pasa / bug | `"nok"` |
 | Blocked / Bloqueado / 🔒 / no puedo / sin ambiente | `"blocked"` |
+| Descartado / desestimado / ya no existe / no se va a probar (cambio de diseño, feature eliminada) | `"descartado"` |
 | Pendiente / skip / después / no ejecuté | (no agregar `status` — el default es `"pendiente"`) |
+
+> `"blocked"` implica que el TC sigue vigente pero algo externo impide probarlo ahora (falta de usuario de prueba, frame de Figma pendiente, dependencia de otro TC roto). `"descartado"` implica que el TC ya no aplica y no se va a ejecutar nunca (el diseño cambió, la funcionalidad se eliminó). No confundir uno con otro.
 
 ---
 
@@ -299,11 +320,19 @@ Cuando hay más de un archivo, `evidencia` es un string separado por comas (para
 
 - **Cliente:** Municipalidad de Córdoba
 - **Plataforma:** Mi DOCTA (web, no mobile)
-- **Módulo:** HOME — vista principal del vecino logueado
-- **Versión Figma:** v2.2 (base de los TCs)
-- **TCs totales:** 70 (TC-HOME-001 a TC-HOME-070)
-- **TCs pre-bloqueados:** 050, 051, 052, 053, 054, 061 (pendientes de frames de Figma — pedir a Mati/Diseño)
 - **Testers activos en la sesión hasta ahora:** Carla Contreras, Mikael Marovich
+- **Repositorio:** `https://github.com/mikaelmarovich-cpu/Mi-Docta-muni` (público, con GitHub Pages)
+
+### Módulos
+
+| Módulo | Prefijo ID | TCs totales | Versión Figma | Notas |
+|--------|-----------|-------------|----------------|-------|
+| HOME (Web) | `TC-HOME-` | 70 (001–070) | v2.2 | Ver detalle de secciones abajo. |
+| Autenticación e Ingreso (Web) | `TC-AUTH-` | 33 (001–033) | v1.0 | Login, bloqueo por intentos fallidos, recuperación de contraseña. |
+| Contribuciones Municipales (Web) | `TC-CONTRIB-` | 35 (001–035) | v1.1 | Listado/pago de contribuciones, historial, representados. |
+
+- **TCs pre-bloqueados en HOME:** 050, 051, 052, 053, 054, 061 (pendientes de frames de Figma — pedir a Mati/Diseño)
+- **TCs descartados en HOME:** 025, 026, 027, 028, 029 (el diseño de Figma cambió, esa sección ya no existe)
 
 ### Secciones del módulo HOME
 
@@ -313,8 +342,8 @@ Cuando hay más de un archivo, `evidencia` es un string separado por comas (para
 | 2 · Sidebar | 007–014 | |
 | 3 · Modal 'Descubrí más' | 015–019 | |
 | 4 · Buscador de trámites | 020–024 | |
-| 5 · Servicios Digitales | 025–026 | ⚠️ Confirmar set de tarjetas con Diseño antes de ejecutar |
-| 6 · Tabs (7 tabs) | 027–029 | |
+| 5 · Servicios Digitales | 025–026 | ⚫ Descartado — diseño de Figma cambió |
+| 6 · Tabs (7 tabs) | 027–029 | ⚫ Descartado — diseño de Figma cambió |
 | 7 · Banner 'TU RESUMEN' | 030–035 | |
 | 8 · Contribuciones | 036–043 | |
 | 9 · Reclamos | 044–049 | |
