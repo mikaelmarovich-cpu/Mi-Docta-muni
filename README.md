@@ -2,8 +2,10 @@
 
 Proyecto de ejecución de QA de la plataforma Mi DOCTA. Un único tablero
 interactivo, con un selector de módulo arriba a la izquierda — hoy cubre
-**HOME (Web)** (70 casos), **Autenticación e Ingreso (Web)** (33 casos) y
-**Contribuciones Municipales (Web)** (35 casos).
+**HOME (Web)** (70 casos), **Autenticación e Ingreso (Web)** (33 casos),
+**Contribuciones Municipales (Web)** (35 casos), **Inmuebles (Web)** (13 casos),
+**Automotor (Web)** (15 casos) y **Estacionamiento (Web)** (15 casos) —
+cierra el Clúster B del plan de pruebas.
 Cada módulo nuevo se agrega como una entrada más del selector, reusando
 el mismo componente — no se crea un repo ni un archivo nuevo por módulo.
 
