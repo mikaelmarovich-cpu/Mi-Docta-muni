@@ -10,8 +10,9 @@ cierra el Clúster B — **Perfil del Usuario (Web)** (18 casos) y
 **Guía de Trámites — iframe (Web)** (11 casos), pieza transversal, y
 **Reclamos (Web)** (14 casos), **Turnos (Web)** (16 casos),
 **Expedientes (Web)** (16 casos), **Movilidad (Web)** (13 casos),
-**Habilitaciones (Web)** (11 casos) y **Proveedores (Web)** (14 casos),
-del Clúster C (falta Agenda y Paradas de Colectivo para cerrarlo).
+**Habilitaciones (Web)** (11 casos), **Proveedores (Web)** (14 casos) y
+**Transporte (Web)** (12 casos, antes "Paradas de Colectivo") —
+cierra el Clúster C (falta Agenda, saltada por decisión del usuario).
 Cada módulo nuevo se agrega como una entrada más del selector, reusando
 el mismo componente — no se crea un repo ni un archivo nuevo por módulo.
 
