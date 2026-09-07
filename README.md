@@ -9,7 +9,8 @@ cierra el Clúster B — **Perfil del Usuario (Web)** (18 casos) y
 **Representaciones (Web)** (18 casos) — cierra el Clúster A —
 **Guía de Trámites — iframe (Web)** (11 casos), pieza transversal, y
 **Reclamos (Web)** (14 casos), **Turnos (Web)** (16 casos),
-**Expedientes (Web)** (16 casos) y **Movilidad (Web)** (13 casos), del Clúster C.
+**Expedientes (Web)** (16 casos), **Movilidad (Web)** (13 casos) y
+**Habilitaciones (Web)** (11 casos), del Clúster C.
 Cada módulo nuevo se agrega como una entrada más del selector, reusando
 el mismo componente — no se crea un repo ni un archivo nuevo por módulo.
 
