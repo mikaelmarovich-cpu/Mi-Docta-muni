@@ -80,6 +80,9 @@
         </sc-if>
         <div style="flex:1"></div>
         <button onClick="{{ copyTable }}" style="font-size:12px; color:#1A3356; border:1px solid #D7DDE5; border-radius:6px; padding:6px 11px; background:#fff; cursor:pointer">{{ copyLabel }}</button>
+        <button onClick="{{ downloadResumen }}" style="font-size:12px; color:#1A3356; border:1px solid #1A3356; border-radius:6px; padding:6px 11px; background:#fff; cursor:pointer; display:flex; align-items:center; gap:6px">
+          <i class="ti ti-report" aria-hidden="true"></i>DESCARGAR RESUMEN
+        </button>
         <button onClick="{{ downloadPdf }}" style="font-size:12px; color:#fff; border:1px solid #1A3356; border-radius:6px; padding:6px 11px; background:#1A3356; cursor:pointer; display:flex; align-items:center; gap:6px">
           <i class="ti ti-file-type-pdf" aria-hidden="true"></i>DESCARGAR PDF
         </button>
@@ -2824,6 +2827,223 @@ class Component extends DCLogic {
     else w.onload = trigger;
   };
 
+  downloadResumenEjecutivo = () => {
+    const esc = (s) => String(s == null ? "" : s)
+      .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+
+    const modKeys = Object.keys(Component.MODULES);
+    const modData = modKeys.map(k => {
+      const cfg = Component.MODULES[k];
+      const tcs = this.loadSaved(k, this.tcsFor(k));
+      const counts = { total: tcs.length, ok:0, nok:0, blocked:0, descartado:0, pendiente:0 };
+      tcs.forEach(t => { counts[t.status] = (counts[t.status] || 0) + 1; });
+      return { key:k, label:cfg.label, tcs, counts };
+    });
+
+    const totals = { total:0, ok:0, nok:0, blocked:0, descartado:0, pendiente:0 };
+    modData.forEach(m => { Object.keys(totals).forEach(kk => { totals[kk] += m.counts[kk] || 0; }); });
+    const executed = totals.total - totals.pendiente;
+    const pctGlobal = totals.total ? Math.round(executed / totals.total * 100) : 0;
+    const okRate = (totals.ok + totals.nok) ? Math.round(totals.ok / (totals.ok + totals.nok) * 1000) / 10 : 0;
+
+    const started = modData.filter(m => (m.counts.total - m.counts.pendiente) > 0);
+    const notStarted = modData.filter(m => (m.counts.total - m.counts.pendiente) === 0);
+
+    const bugs = [];
+    modData.forEach(m => m.tcs.forEach(t => { if (t.status === "nok") bugs.push({ modLabel:m.label, id:t.id, name:t.name, prioridad:t.prioridad, observaciones:t.observaciones }); }));
+
+    const blockedItems = [];
+    modData.forEach(m => m.tcs.forEach(t => { if (t.status === "blocked") blockedItems.push({ modLabel:m.label, id:t.id, name:t.name, observaciones:t.observaciones }); }));
+
+    const barRow = (label, c, extraStyle) => {
+      const pct = c.total ? Math.round((c.total - c.pendiente) / c.total * 100) : 0;
+      const w = (n) => c.total ? (n / c.total * 100).toFixed(1) : "0.0";
+      return `
+        <tr style="${extraStyle || ""}">
+          <td>${esc(label)}</td>
+          <td class="num">${c.total}</td>
+          <td class="num">${c.ok}</td>
+          <td class="num">${c.nok}</td>
+          <td class="num">${c.blocked}</td>
+          <td class="num">${c.descartado}</td>
+          <td class="num">${c.pendiente}</td>
+          <td class="bar-cell"><div class="bar-bg"><div class="bar-ok" style="width:${w(c.ok)}%"></div><div class="bar-nok" style="width:${w(c.nok)}%"></div><div class="bar-blocked" style="width:${w(c.blocked)}%"></div><div class="bar-descartado" style="width:${w(c.descartado)}%"></div></div><span class="pct">${pct}%</span></td>
+        </tr>`;
+    };
+
+    const rowsHtml = modData.map(m => barRow(m.label, m.counts)).join("");
+    const totalsRow = barRow(`TOTAL (${modData.length} módulos)`, totals, "font-weight:700; background:#EEF1F4;")
+      .replace(/<div class="bar-bg">[\s\S]*?<\/div><\/div>/, "");
+
+    const startedHtml = started.map(m => {
+      const c = m.counts;
+      const pct = c.total ? Math.round((c.total - c.pendiente) / c.total * 100) : 0;
+      const parts = [];
+      if (c.ok) parts.push(`${c.ok} OK`);
+      if (c.nok) parts.push(`${c.nok} No OK`);
+      if (c.blocked) parts.push(`${c.blocked} Blocked`);
+      if (c.descartado) parts.push(`${c.descartado} Descartado`);
+      if (c.pendiente) parts.push(`${c.pendiente} Pendiente`);
+      return `<li><b>${esc(m.label)}</b> — ${c.total} TC · ${parts.join(" · ")} (${pct}% avance)</li>`;
+    }).join("") || `<li>Todavía no hay módulos con ejecución iniciada.</li>`;
+
+    const notStartedTotals = notStarted.reduce((a, m) => {
+      a.total += m.counts.total;
+      m.tcs.forEach(t => { if (t.prioridad === "P1") a.p1++; else if (t.prioridad === "P2") a.p2++; else if (t.prioridad === "P3") a.p3++; });
+      return a;
+    }, { total:0, p1:0, p2:0, p3:0 });
+
+    const notStartedRows = notStarted.map(m => {
+      const prios = { P1:0, P2:0, P3:0 };
+      m.tcs.forEach(t => { if (prios[t.prioridad] != null) prios[t.prioridad]++; });
+      return `<tr><td>${esc(m.label)}</td><td class="num">${m.counts.total}</td><td class="num">${prios.P1}</td><td class="num">${prios.P2}</td><td class="num">${prios.P3}</td></tr>`;
+    }).join("") || `<tr><td colspan="4" style="text-align:center; color:#8A94A2">Todos los módulos tienen al menos un TC ejecutado.</td></tr>`;
+
+    const prioBadge = (p) => `<span class="badge ${p === "P1" ? "b-alta" : p === "P2" ? "b-media" : "b-baja"}">${esc(p)}</span>`;
+
+    const bugsHtml = bugs.length ? bugs.map(b => `
+      <tr>
+        <td>${esc(b.id)}</td>
+        <td>${esc(b.modLabel)}</td>
+        <td>${esc(b.name)}</td>
+        <td>${prioBadge(b.prioridad)}</td>
+        <td>${esc(b.observaciones || "—")}</td>
+      </tr>`).join("") : `<tr><td colspan="5" style="text-align:center; color:#8A94A2">Sin bugs abiertos al momento de generar el informe.</td></tr>`;
+
+    const riesgosHtml = blockedItems.length
+      ? blockedItems.slice(0, 25).map(b => `<li><b>${esc(b.id)}</b> (${esc(b.modLabel)}) — ${esc(b.name)}${b.observaciones ? `: ${esc(b.observaciones)}` : ""}</li>`).join("")
+        + (blockedItems.length > 25 ? `<li>… y ${blockedItems.length - 25} caso(s) bloqueado(s) adicionales (ver detalle en el tablero por módulo).</li>` : "")
+      : `<li>No hay casos bloqueados al momento de generar el informe.</li>`;
+
+    let lowest = null;
+    started.forEach(m => {
+      const pct = m.counts.total ? Math.round((m.counts.total - m.counts.pendiente) / m.counts.total * 100) : 0;
+      if (!lowest || pct < lowest.pct) lowest = { label: m.label, pct };
+    });
+
+    const nextSteps = [];
+    if (notStarted.length) nextSteps.push(`Arrancar ejecución en los ${notStarted.length} módulos sin TC ejecutados, empezando por los ${notStartedTotals.p1} casos P1.`);
+    if (bugs.length) nextSteps.push(`Cerrar los ${bugs.length} bug(s) abierto(s) (status "No OK") con Desarrollo.`);
+    if (totals.blocked) nextSteps.push(`Destrabar los ${totals.blocked} TC bloqueados: gestionar dependencias externas (Diseño/Producto) y ambientes de prueba.`);
+    if (lowest) nextSteps.push(`Completar ${esc(lowest.label)} (${lowest.pct}% avance, el más bajo entre los módulos iniciados) antes de escalar módulos que dependan de su funcionalidad.`);
+    const nextStepsHtml = nextSteps.length ? nextSteps.map(s => `<li>${s}</li>`).join("") : `<li>No hay acciones pendientes críticas: todos los módulos están ejecutados y sin bugs ni bloqueos abiertos.</li>`;
+
+    const fechaGen = esc(new Date().toLocaleString("es-AR"));
+
+    const html = `<!DOCTYPE html><html><head><meta charset="utf-8">
+      <title>Informe Ejecutivo QA — Mi DOCTA</title>
+      <style>
+        @page { size: A4; margin: 18mm 16mm; }
+        * { box-sizing: border-box; }
+        body { font-family: "Segoe UI", Helvetica, Arial, sans-serif; color:#1B2430; margin:0; font-size:12px; line-height:1.5; padding:0 4px; }
+        h1 { font-size:22px; margin:0 0 2px; color:#0F2A4A; }
+        h2 { font-size:14px; text-transform:uppercase; letter-spacing:0.04em; color:#0F2A4A; border-bottom:2px solid #0F2A4A; padding-bottom:5px; margin:26px 0 12px; page-break-after:avoid; }
+        h3 { font-size:12px; margin:14px 0 6px; color:#1B2430; }
+        .cover { border-bottom:3px solid #0F2A4A; padding-bottom:14px; margin-bottom:18px; }
+        .meta { font-size:11px; color:#5A6675; }
+        .kpi-row { display:flex; gap:10px; margin: 14px 0 20px; }
+        .kpi { flex:1; border:1px solid #E2E6EB; border-radius:8px; padding:10px 12px; text-align:center; background:#F7F9FA; }
+        .kpi .num { font-size:22px; font-weight:700; display:block; }
+        .kpi .lbl { font-size:10px; color:#5A6675; text-transform:uppercase; letter-spacing:0.03em; }
+        .kpi.ok .num { color:#157F4A; } .kpi.nok .num { color:#A5311F; } .kpi.blocked .num { color:#8A5A00; }
+        .kpi.pend .num { color:#8A94A2; } .kpi.total .num { color:#0F2A4A; }
+        table { width:100%; border-collapse:collapse; font-size:11px; margin-bottom:8px; }
+        th, td { border:1px solid #E2E6EB; padding:5px 7px; text-align:left; }
+        th { background:#0F2A4A; color:#fff; font-weight:600; font-size:10px; text-transform:uppercase; letter-spacing:0.02em; }
+        tr:nth-child(even) td { background:#F7F9FA; }
+        td.num, th.num { text-align:center; }
+        .bar-cell { position:relative; min-width:90px; }
+        .bar-bg { background:#EEF1F4; border-radius:4px; height:10px; overflow:hidden; display:flex; }
+        .bar-ok { background:#22A05F; height:100%; } .bar-nok { background:#D0402A; height:100%; }
+        .bar-blocked { background:#D69200; height:100%; } .bar-descartado { background:#8A94A2; height:100%; }
+        .pct { font-size:10px; color:#5A6675; }
+        .badge { display:inline-block; font-size:9px; padding:2px 7px; border-radius:99px; font-weight:600; }
+        .b-alta { background:#FBECEA; color:#A5311F; } .b-media { background:#FDF3E3; color:#8A5A00; } .b-baja { background:#E8F0FB; color:#1A56A8; }
+        .callout { border-left:4px solid #0F2A4A; background:#F7F9FA; padding:10px 14px; border-radius:0 6px 6px 0; margin-bottom:10px; font-size:11.5px; }
+        .callout.warn { border-left-color:#D69200; } .callout.crit { border-left-color:#A5311F; }
+        ul { margin:6px 0; padding-left:18px; } li { margin-bottom:4px; }
+        .section-break { page-break-before: always; }
+        .foot { margin-top:26px; font-size:10px; color:#8A94A2; border-top:1px solid #E2E6EB; padding-top:8px; }
+        .tag-zero { color:#A5311F; font-weight:600; }
+        @media print { .tc { page-break-inside:avoid; } }
+      </style>
+      </head><body>
+
+      <div class="cover">
+        <h1>Informe Ejecutivo de Testing — Plataforma Mi DOCTA</h1>
+        <div class="meta">Municipalidad de Córdoba · Estado consolidado de los ${modData.length} módulos del tablero de QA · Generado: ${fechaGen}</div>
+      </div>
+
+      <h2>1. Resumen ejecutivo</h2>
+      <div class="kpi-row">
+        <div class="kpi total"><span class="num">${totals.total}</span><span class="lbl">Casos de prueba totales</span></div>
+        <div class="kpi ok"><span class="num">${totals.ok}</span><span class="lbl">OK</span></div>
+        <div class="kpi nok"><span class="num">${totals.nok}</span><span class="lbl">No OK</span></div>
+        <div class="kpi blocked"><span class="num">${totals.blocked}</span><span class="lbl">Blocked</span></div>
+        <div class="kpi pend"><span class="num">${totals.pendiente}</span><span class="lbl">Pendientes</span></div>
+      </div>
+
+      <div class="callout">
+        <b>Avance global: ${pctGlobal}%</b> (${executed} de ${totals.total} casos ejecutados). De los casos ejecutados y comparables (OK + No OK), la tasa de éxito es del <b>${okRate}%</b> (${totals.ok}/${totals.ok + totals.nok || 0}).
+      </div>
+      <div class="callout warn">
+        <b>${notStarted.length} de ${modData.length} módulos (${notStartedTotals.total} TC) todavía no tienen ninguna ejecución registrada:</b> ${notStarted.map(m => esc(m.label)).join(", ") || "—"}. Están desarrollados y con casos de prueba definidos, listos para empezar a probarse.
+      </div>
+      <div class="callout crit">
+        <b>${bugs.length} bug(s) abierto(s)</b> (status "No OK") — ver detalle en la sección 4 — y <b>${totals.blocked} caso(s) bloqueado(s)</b>, ver sección 5.
+      </div>
+
+      <h2>2. Estado consolidado por módulo</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Módulo</th><th class="num">Total</th><th class="num">OK</th><th class="num">No OK</th>
+            <th class="num">Blocked</th><th class="num">Descart.</th><th class="num">Pend.</th><th>Avance</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${rowsHtml}
+          ${totalsRow}
+        </tbody>
+      </table>
+
+      <h2 class="section-break">3. Qué está desarrollado y listo para probar vs. qué ya se probó</h2>
+      <h3>3.1 Módulos con ejecución en curso o finalizada (${started.length})</h3>
+      <ul>${startedHtml}</ul>
+
+      <h3>3.2 Módulos desarrollados, con TC definidos, <span class="tag-zero">sin ejecución iniciada</span> (${notStarted.length})</h3>
+      <table>
+        <thead><tr><th>Módulo</th><th class="num">TC definidos</th><th class="num">P1</th><th class="num">P2</th><th class="num">P3</th></tr></thead>
+        <tbody>${notStartedRows}</tbody>
+      </table>
+      <p style="font-size:11px; color:#5A6675;">Total: <b>${notStartedTotals.total} TC</b> (${notStartedTotals.p1} P1 · ${notStartedTotals.p2} P2 · ${notStartedTotals.p3} P3) listos para asignar a testers.</p>
+
+      <h2>4. Bugs abiertos (status "No OK")</h2>
+      <table>
+        <thead><tr><th>ID</th><th>Módulo</th><th>Caso</th><th>Prioridad</th><th>Observación</th></tr></thead>
+        <tbody>${bugsHtml}</tbody>
+      </table>
+
+      <h2>5. Riesgos y dependencias abiertas (casos bloqueados)</h2>
+      <ul>${riesgosHtml}</ul>
+
+      <h2>6. Próximos pasos recomendados</h2>
+      <ul>${nextStepsHtml}</ul>
+
+      <div class="foot">Fuente: tablero QA Mi DOCTA (repositorio Mi-Docta-muni) · Informe generado automáticamente a partir del estado actual de todos los módulos.</div>
+
+      </body></html>`;
+
+    const w = window.open("", "_blank");
+    if (!w) { alert("El navegador bloqueó la ventana emergente. Habilitá pop-ups para descargar el resumen."); return; }
+    w.document.open();
+    w.document.write(html);
+    w.document.close();
+    const trigger = () => { try { w.focus(); w.print(); } catch (e) {} };
+    if (w.document.readyState === "complete") trigger();
+    else w.onload = trigger;
+  };
+
   renderVals() {
     const S = this.state, ST = Component.STATUS, TP = Component.TIPO, PR = Component.PRIO;
     const f = this.filtered();
@@ -2888,6 +3108,7 @@ class Component extends DCLogic {
       clearFilters: () => this.setState({ fSec:"all", fStat:"all", fPrio:"all" }),
       copyTable: this.copyTable,
       downloadPdf: this.downloadPdf,
+      downloadResumen: this.downloadResumenEjecutivo,
       copyLabel: S.copied ? "Tabla copiada ✓" : "Copiar tabla de estado",
       groups, isEmpty: f.length === 0,
       cur: {
