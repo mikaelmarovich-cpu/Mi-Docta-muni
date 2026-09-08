@@ -6,8 +6,14 @@ interactivo, con un selector de módulo arriba a la izquierda — hoy cubre
 **Contribuciones Municipales (Web)** (35 casos), **Inmuebles (Web)** (13 casos),
 **Automotor (Web)** (15 casos), **Estacionamiento (Web)** (15 casos) —
 cierra el Clúster B — **Perfil del Usuario (Web)** (18 casos) y
-**Representaciones (Web)** (18 casos) — cierra el Clúster A — y
-**Guía de Trámites — iframe (Web)** (11 casos), pieza transversal.
+**Representaciones (Web)** (18 casos) — cierra el Clúster A —
+**Guía de Trámites — iframe (Web)** (11 casos), pieza transversal, y
+**Reclamos (Web)** (14 casos), **Turnos (Web)** (16 casos),
+**Expedientes (Web)** (16 casos), **Movilidad (Web)** (13 casos),
+**Habilitaciones (Web)** (11 casos), **Proveedores (Web)** (14 casos) y
+**Transporte (Web)** (12 casos, antes "Paradas de Colectivo") —
+cierra el Clúster C (falta Agenda, saltada por decisión del usuario) —
+**Deporte (Web)** (11 casos) y **Cultura (Web)** (9 casos), del Clúster D.
 Cada módulo nuevo se agrega como una entrada más del selector, reusando
 el mismo componente — no se crea un repo ni un archivo nuevo por módulo.
 
