@@ -13,7 +13,8 @@ cierra el Clúster B — **Perfil del Usuario (Web)** (18 casos) y
 **Habilitaciones (Web)** (11 casos), **Proveedores (Web)** (14 casos) y
 **Transporte (Web)** (12 casos, antes "Paradas de Colectivo") —
 cierra el Clúster C (falta Agenda, saltada por decisión del usuario) —
-**Deporte (Web)** (11 casos) y **Cultura (Web)** (9 casos), del Clúster D.
+**Deporte (Web)** (11 casos), **Cultura (Web)** (9 casos) y
+**Turismo (Web)** (11 casos), del Clúster D.
 Cada módulo nuevo se agrega como una entrada más del selector, reusando
 el mismo componente — no se crea un repo ni un archivo nuevo por módulo.
 
